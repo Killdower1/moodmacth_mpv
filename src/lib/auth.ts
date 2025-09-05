@@ -1,6 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "./prisma";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -12,14 +12,21 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         const schema = z.object({
           email: z.string().email(),
-          password: z.string().min(8)
+          password: z.string().min(6)
         });
         const parsed = schema.safeParse(credentials);
-        if (!parsed.success) return null;
+        if (!parsed.success) {
+          console.log("Authorize: invalid input", credentials);
+          return null;
+        }
         const { email, password } = parsed.data;
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.passwordHash) return null;
-        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (!user || !user.password) {
+          console.log("Authorize: user not found", email);
+          return null;
+        }
+        const valid = await bcrypt.compare(password, user.password);
+        console.log("Authorize: compare result", valid);
         if (!valid) return null;
         return { id: user.id, email: user.email, name: user.name };
       },
