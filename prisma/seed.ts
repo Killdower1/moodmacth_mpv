@@ -20,8 +20,7 @@ const FIXED_USERS = [
 ];
 
 function randomGender(): 'male' | 'female' | 'other' {
-  const g = faker.helpers.arrayElement(['male', 'female', 'other']);
-  return g;
+  return faker.helpers.arrayElement(['male', 'female', 'other']);
 }
 
 function randomBirthdate(): Date {
@@ -40,7 +39,6 @@ function randomAvatar(gender: string): string {
     const idx = faker.number.int({ min: 1, max: 99 });
     return `https://randomuser.me/api/portraits/${gender === 'male' ? 'men' : 'women'}/${idx}.jpg`;
   }
-  // For 'other', use a neutral avatar
   return `https://randomuser.me/api/portraits/lego/${faker.number.int({ min: 1, max: 9 })}.jpg`;
 }
 
@@ -53,7 +51,6 @@ async function main() {
 
   const users = [];
 
-  // Insert fixed test accounts
   for (const u of FIXED_USERS) {
     users.push({
       email: u.email,
@@ -65,7 +62,6 @@ async function main() {
     });
   }
 
-  // Generate 38 random users
   for (let i = 0; i < 38; i++) {
     const gender = randomGender();
     const firstName = faker.person.firstName(gender === 'male' ? 'male' : gender === 'female' ? 'female' : undefined);

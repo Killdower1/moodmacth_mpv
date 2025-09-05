@@ -1,49 +1,121 @@
-'use client';
-import { useState } from 'react';
+"use client";
 
-export default function Onboarding() {
-  const [name, setName] = useState('');
-  const [dob, setDob] = useState('');
-  const [gender, setGender] = useState('');
-  const [photo, setPhoto] = useState('');
-  const [bio, setBio] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+export default function OnboardingPage() {
+  const router = useRouter();
+  const [form, setForm] = useState({
+    name: "",
+    gender: "",
+    birthdate: "",
+    image: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((res) => res.json())
+      .then((user) => {
+        if (user.name && user.gender && user.birthdate) {
+          router.replace("/feed");
+        }
+      });
+  }, [router]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const res = await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    if (res.ok) {
+      router.replace("/feed");
+    } else {
+      const data = await res.json();
+      setError(data.error || "Failed to update profile");
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="card" style={{maxWidth:560}}>
-      <h2>Onboarding</h2>
-      <p>Lengkapi profil dulu ya.</p>
-      {err && <div className="badge" style={{borderColor:'#a33', color:'#fbb'}}>{err}</div>}
-      <form onSubmit={async (e)=>{
-        e.preventDefault();
-        setSaving(true); setErr(null);
-        const fd = new FormData();
-        fd.set('name', name);
-        fd.set('dob', dob);
-        fd.set('gender', gender);
-        fd.set('photo', photo);
-        fd.set('bio', bio);
-        const res = await fetch('/api/onboarding', { method:'POST', body: fd });
-        setSaving(false);
-        if (!res.ok) {
-          const j = await res.json().catch(()=>({error:'Failed'}));
-          setErr(j.error || 'Gagal menyimpan');
-          return;
-        }
-        window.location.href = '/feed';
-      }} className="grid">
-        <input className="input" placeholder="Nama" value={name} onChange={e=>setName(e.target.value)} required />
-        <input className="input" type="date" value={dob} onChange={e=>setDob(e.target.value)} required />
-        <select className="select" value={gender} onChange={e=>setGender(e.target.value)} required>
-          <option value="">Pilih gender</option>
-          <option value="F">Female</option>
-          <option value="M">Male</option>
-          <option value="O">Other</option>
-        </select>
-        <input className="input" placeholder="URL Foto (sementara pakai link)" value={photo} onChange={e=>setPhoto(e.target.value)} required />
-        <textarea className="input" placeholder="Bio singkat" value={bio} onChange={e=>setBio(e.target.value)} />
-        <button className="btn" disabled={saving}>{saving ? 'Saving...' : 'Save & Start'}</button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <form
+        className="w-full max-w-md bg-white rounded-lg shadow p-6 space-y-6"
+        onSubmit={handleSubmit}
+      >
+        <h2 className="text-2xl font-bold text-center mb-4">
+          Complete Your Profile
+        </h2>
+        {error && <div className="text-red-500 text-sm">{error}</div>}
+        <div>
+          <label className="block text-sm font-medium mb-1">Name</label>
+          <input
+            type="text"
+            name="name"
+            required
+            value={form.name}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+            placeholder="Your name"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Gender</label>
+          <select
+            name="gender"
+            required
+            value={form.gender}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+          >
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Birthdate</label>
+          <input
+            type="date"
+            name="birthdate"
+            required
+            value={form.birthdate}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Avatar URL (optional)
+          </label>
+          <input
+            type="url"
+            name="image"
+            value={form.image}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+            placeholder="https://..."
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition"
+        >
+          {loading ? "Saving..." : "Continue"}
+        </button>
       </form>
     </div>
   );

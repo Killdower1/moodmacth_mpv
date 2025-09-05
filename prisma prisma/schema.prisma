@@ -1,16 +1,45 @@
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
+  id           String   @id @default(cuid())
+  email        String   @unique
   passwordHash String?
   name         String?
-  birthdate    DateTime?
   gender       String?
-  image        String?       @db.VarChar(255) // <--- Tambahkan ini
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  profile      Profile?
-  reputation   Reputation?
-  moodSessions MoodSession[]
+  birthdate    DateTime?
+  image        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  likesSent     Like[]   @relation("likesSent")
+  likesReceived Like[]   @relation("likesReceived")
+  matchesA      Match[]  @relation("matchesA")
+  matchesB      Match[]  @relation("matchesB")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  createdAt DateTime @default(now())
+
+  from User @relation("likesSent", fields: [fromId], references: [id], onDelete: Cascade)
+  to   User @relation("likesReceived", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId])
+  @@index([toId])
+}
+
+model Match {
+  id        String   @id @default(cuid())
+  aId       String
+  bId       String
+  createdAt DateTime @default(now())
+
+  a User @relation("matchesA", fields: [aId], references: [id], onDelete: Cascade)
+  b User @relation("matchesB", fields: [bId], references: [id], onDelete: Cascade)
+
+  @@unique([aId, bId])
+  @@index([aId])
+  @@index([bId])
 }
 
 model Hidden {

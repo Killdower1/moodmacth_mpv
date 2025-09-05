@@ -3,11 +3,20 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+function getAge(birthdate?: Date | null) {
+  if (!birthdate) return undefined;
+  const now = new Date();
+  let age = now.getFullYear() - birthdate.getFullYear();
+  const m = now.getMonth() - birthdate.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birthdate.getDate())) age--;
+  return age;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ "users": [], "nextCursor": null }, { status: 401 });
+      return NextResponse.json({ users: [], nextCursor: null }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -15,14 +24,12 @@ export async function GET(req: NextRequest) {
     const cursor = searchParams.get('cursor');
     const take = 10;
 
-    // Get ids to exclude: self, liked, hidden
     const [likes, hiddens] = await Promise.all([
       prisma.like.findMany({ where: { fromId: userId }, select: { toId: true } }),
       prisma.hidden.findMany({ where: { userId }, select: { hideId: true } }),
     ]);
     const excludeIds = [userId, ...likes.map(l => l.toId), ...hiddens.map(h => h.hideId)];
 
-    // Only show users with complete profile
     const users = await prisma.user.findMany({
       where: {
         id: { notIn: excludeIds },
@@ -53,33 +60,6 @@ export async function GET(req: NextRequest) {
       nextCursor: users.length === take ? users[users.length - 1].id : null,
     });
   } catch (err) {
-    return NextResponse.json({ "users": [], "nextCursor": null }, { status: 500 });
+    return NextResponse.json({ users: [], nextCursor: null }, { status: 500 });
   }
 }
-
-function getAge(birthdate?: Date | null) {
-  if (!birthdate) return undefined;
-  const now = new Date();
-  let age = now.getFullYear() - birthdate.getFullYear();
-  const m = now.getMonth() - birthdate.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birthdate.getDate())) age--;
-  return age;
-}
-
-const fetchCards = async (cursor?: string) => {
-  setLoading(true);
-  const res = await fetch(`/api/feed${cursor ? `?cursor=${cursor}` : ""}`);
-  if (!res.ok) {
-    setLoading(false);
-    return;
-  }
-  const text = await res.text();
-  if (!text) {
-    setLoading(false);
-    return;
-  }
-  const data = JSON.parse(text);
-  setCards((prev) => [...prev, ...data.users]);
-  setNextCursor(data.nextCursor);
-  setLoading(false);
-};

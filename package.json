@@ -9,27 +9,28 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@faker-js/faker": "^10.0.0",
     "@prisma/client": "5.16.1",
     "@react-spring/web": "^9.5.5",
-    "bcryptjs": "2.4.3",
+    "bcryptjs": "^2.4.3",
     "next": "14.2.5",
-    "next-auth": "4.24.7",
+    "next-auth": "^4.24.7",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-tinder-card": "^1.6.4",
     "socket.io": "4.7.5",
     "socket.io-client": "4.7.5",
-    "zod": "3.23.8"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcryptjs": "2.4.6",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "20.11.30",
     "@types/react": "18.2.66",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.5",
     "prisma": "5.16.1",
     "ts-node": "10.9.2",
-    "tsx": "4.16.2",
+    "tsx": "^4.16.2",
     "typescript": "5.4.2"
   },
   "packageManager": "pnpm@9.15.9+sha512.68046141893c66fad01c079231128e9afb89ef87e2691d69e4d40eee228988295fd4682181bae55b58418c3a253bde65a505ec7c5f9403ece5cc3cd37dcf2531",

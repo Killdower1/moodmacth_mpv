@@ -19,11 +19,19 @@ export default function FeedClient() {
   const [alert, setAlert] = useState<string | null>(null);
   const childRefs = useRef<any[]>([]);
 
-  // Fetch cards
   const fetchCards = async (cursor?: string) => {
     setLoading(true);
     const res = await fetch(`/api/feed${cursor ? `?cursor=${cursor}` : ""}`);
-    const data = await res.json();
+    if (!res.ok) {
+      setLoading(false);
+      return;
+    }
+    const text = await res.text();
+    if (!text) {
+      setLoading(false);
+      return;
+    }
+    const data = JSON.parse(text);
     setCards((prev) => [...prev, ...data.users]);
     setNextCursor(data.nextCursor);
     setLoading(false);
@@ -31,7 +39,6 @@ export default function FeedClient() {
 
   useEffect(() => {
     fetchCards();
-    // eslint-disable-next-line
   }, []);
 
   const handleSwipe = async (dir: string, id: string, idx: number) => {
@@ -53,15 +60,12 @@ export default function FeedClient() {
         body: JSON.stringify({ toId: id }),
       });
     }
-    // Remove card from stack
     setCards((prev) => prev.filter((_, i) => i !== idx));
-    // Fetch next batch if almost empty
     if (cards.length <= 3 && nextCursor) {
       fetchCards(nextCursor);
     }
   };
 
-  // Fallback buttons
   const swipe = (dir: "left" | "right") => {
     const idx = cards.length - 1;
     if (idx < 0) return;
