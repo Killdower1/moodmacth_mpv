@@ -1,0 +1,12 @@
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0f14; color:#e7edf3; }
+a { color: #7db9ff; }
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+.card { background: #121821; border: 1px solid #1f2a36; border-radius: 12px; padding: 16px; }
+.btn { background:#1a2533; border:1px solid #2a394d; border-radius:10px; padding:10px 14px; color:#e7edf3; display:inline-block; text-decoration:none; }
+.btn:hover { background:#223144; }
+.input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2a394d; background:#0d131b; color:#e7edf3; }
+.select { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2a394d; background:#0d131b; color:#e7edf3; }
+.grid { display:grid; gap:12px; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.badge { background:#1f2a36; border:1px solid #2b3a4d; padding:4px 8px; border-radius:999px; font-size:12px; }

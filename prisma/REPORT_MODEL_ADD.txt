@@ -1,0 +1,14 @@
+# Tambahkan blok ini ke prisma/schema.prisma (di akhir file), lalu jalankan:
+# pnpm prisma migrate dev --name reports
+
+model Report {
+  id           String   @id @default(cuid())
+  fromUserId   String
+  targetUserId String?
+  messageId    String?
+  reason       String
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId])
+  @@index([messageId])
+}
