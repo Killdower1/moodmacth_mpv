@@ -20,12 +20,13 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
         const { email, password } = parsed.data;
+        console.log("Authorize: mencari user dengan email", email);
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.password) {
+        if (!user || !user.passwordHash) {
           console.log("Authorize: user not found", email);
           return null;
         }
-        const valid = await bcrypt.compare(password, user.password);
+        const valid = await bcrypt.compare(password, user.passwordHash);
         console.log("Authorize: compare result", valid);
         if (!valid) return null;
         return { id: user.id, email: user.email, name: user.name };
