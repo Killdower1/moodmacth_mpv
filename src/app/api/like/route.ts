@@ -1,33 +1,48 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { z } from 'zod';
 
-export async function POST(req: Request){
+const LikeSchema = z.object({
+  toId: z.string().min(1),
+});
+
+export async function POST(req: NextRequest){
   const session = await getServerSession(authOptions);
-  if(!session?.user?.email) return NextResponse.json({error:'Unauthorized'},{status:401});
-  const me = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if(!me) return NextResponse.json({error:'No user'},{status:400});
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const form = await req.formData();
-  const toUser = String(form.get('toUser') || '');
-  if(!toUser) return NextResponse.json({error:'Missing toUser'},{status:400});
+  const userId = session.user.id;
+  const body = await req.json();
+  const parse = LikeSchema.safeParse(body);
+  if (!parse.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
 
-  await prisma.like.create({ data: { fromUser: me.id, toUser, moodCtx: 'CHILL' } });
+  const { toId } = parse.data;
+  if (toId === userId) return NextResponse.json({ error: 'Cannot like yourself' }, { status: 400 });
 
-  const likedBack = await prisma.like.findFirst({ where: { fromUser: toUser, toUser: me.id } });
-  if(likedBack){
-    // create match if not exists
-    const existing = await prisma.match.findFirst({
-      where: { OR: [
-        { userA: me.id, userB: toUser },
-        { userA: toUser, userB: me.id }
-      ]}
+  // Create Like if not exists
+  await prisma.like.upsert({
+    where: { fromId_toId: { fromId: userId, toId } },
+    update: {},
+    create: { fromId: userId, toId },
+  });
+
+  // Check for mutual like
+  const mutual = await prisma.like.findUnique({
+    where: { fromId_toId: { fromId: toId, toId: userId } },
+  });
+
+  let matched = false;
+  if (mutual) {
+    // Ensure aId < bId for unique
+    const [aId, bId] = [userId, toId].sort();
+    await prisma.match.upsert({
+      where: { aId_bId: { aId, bId } },
+      update: {},
+      create: { aId, bId },
     });
-    if(!existing){
-      await prisma.match.create({ data: { userA: me.id, userB: toUser, adultCtx: false } });
-    }
+    matched = true;
   }
 
-    return NextResponse.redirect(new URL('/matches', req.url));
+  return NextResponse.json({ ok: true, matched });
 }

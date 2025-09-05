@@ -12,3 +12,10 @@ model User {
   reputation   Reputation?
   moodSessions MoodSession[]
 }
+
+model Hidden {
+  id     String @id @default(cuid())
+  userId String
+  hideId String
+  @@unique([userId, hideId])
+}
