@@ -1,34 +1,31 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
-
-const TEST_OTP_MODE = process.env.TEST_OTP_MODE === 'true';
-const WHITELIST = (process.env.TEST_OTP_WHITELIST || '').split(',').map(s=>s.trim()).filter(Boolean);
+import bcrypt from "bcryptjs";
+import { z } from "zod";
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: 'jwt' },
+  session: { strategy: "jwt" },
   providers: [
     Credentials({
-      name: "Test OTP",
-      credentials: {
-        email: { label: "Email", type: "text" },
-        code: { label: "Code", type: "password" }
-      },
+      name: "Email & Password",
+      credentials: { email: { label: "Email", type: "email" }, password: { label: "Password", type: "password" } },
       async authorize(credentials) {
-        if (!credentials?.email) return null;
-        const email = credentials.email.toLowerCase();
-        if (!TEST_OTP_MODE) return null;
-        if (!WHITELIST.includes(email)) return null;
-        if (credentials.code !== '111111') return null;
-
-        let user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-          user = await prisma.user.create({ data: { email } });
-        }
-        return { id: user.id, email: user.email, name: user.name || user.email };
-      }
-    })
+        const schema = z.object({ email: z.string().email(), password: z.string().min(6) });
+        const parsed = schema.safeParse(credentials);
+        if (!parsed.success) return null;
+        const { email, password } = parsed.data;
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return null;
+        const ok = await bcrypt.compare(password, user.passwordHash);
+        if (!ok) return null;
+        return { id: user.id, email: user.email, name: user.name ?? undefined, image: user.image ?? undefined };
+      },
+    }),
   ],
-  pages: { signIn: '/login' },
-  secret: process.env.NEXTAUTH_SECRET
+  pages: { signIn: "/login" },
+  callbacks: {
+    async jwt({ token, user }) { if (user) (token as any).uid = (user as any).id; return token; },
+    async session({ session, token }) { if ((token as any)?.uid && session.user) (session.user as any).id = (token as any).uid as string; return session; },
+  },
 };
