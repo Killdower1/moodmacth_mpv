@@ -1,17 +1,27 @@
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
+import { redirect } from 'next/navigation';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export default async function FeedPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
-        <p>Unauthorized</p>
-        <Link className="underline" href="/login">Go to login</Link>
-      </div>
-    );
+
+  if (!session?.user?.email) {
+    redirect('/login');
   }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { name: true, gender: true, birthdate: true },
+  });
+
+  if (!user?.name || !user?.gender || !user?.birthdate) {
+    redirect('/onboarding');
+  }
+
   return (
     <div className="min-h-screen p-6">
       <h1 className="text-2xl font-bold mb-2">Feed</h1>
