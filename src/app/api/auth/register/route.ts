@@ -18,7 +18,6 @@ export async function POST(req: Request) {
         { status: 415 }
       );
     }
-
     const body = await req.json();
     const parsed = RegisterSchema.safeParse(body);
     if (!parsed.success) {
@@ -27,28 +26,20 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
     const { name, email, password } = parsed.data;
-
-    // Check if the email is already registered
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (user) {
+    const existed = await prisma.user.findUnique({ where: { email } });
+    if (existed) {
       return NextResponse.json(
         { error: "Email sudah terdaftar" },
         { status: 409 }
       );
     }
-
-    // Hash the password
     const hashed = await bcrypt.hash(password, 10);
-
-    // Create a new user in the database
-    const newUser = await prisma.user.create({
+    const user = await prisma.user.create({
       data: { name, email, passwordHash: hashed },
       select: { id: true, email: true, name: true },
     });
-
-    return NextResponse.json({ user: newUser }, { status: 201 });
+    return NextResponse.json({ user }, { status: 201 });
   } catch (err: any) {
     if (err?.code === "P2002") {
       return NextResponse.json(

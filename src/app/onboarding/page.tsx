@@ -16,12 +16,15 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     fetch("/api/me")
-      .then((res) => res.json())
-      .then((user) => {
+      .then((res) => res.text())
+      .then((text) => {
+        if (!text) return;
+        const user = JSON.parse(text);
         if (user.name && user.gender && user.birthdate) {
           router.replace("/feed");
         }
-      });
+      })
+      .catch(() => {});
   }, [router]);
 
   const handleChange = (
@@ -42,8 +45,9 @@ export default function OnboardingPage() {
     if (res.ok) {
       router.replace("/feed");
     } else {
-      const data = await res.json();
-      setError(data.error || "Failed to update profile");
+      let data = {};
+      try { data = await res.json(); } catch {}
+      setError(data?.error || "Failed to update profile");
       setLoading(false);
     }
   };

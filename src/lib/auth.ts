@@ -19,7 +19,8 @@ export const authOptions: NextAuthOptions = {
           console.log("Authorize: invalid input", credentials);
           return null;
         }
-        const { email, password } = parsed.data;
+        const email = parsed.data.email.trim().toLowerCase();
+        const password = parsed.data.password;
         console.log("Authorize: mencari user dengan email", email);
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user || !user.passwordHash) {
@@ -29,7 +30,7 @@ export const authOptions: NextAuthOptions = {
         const valid = await bcrypt.compare(password, user.passwordHash);
         console.log("Authorize: compare result", valid);
         if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name };
+        return { id: user.id, email: user.email, name: user.name ?? "" };
       },
     }),
   ],

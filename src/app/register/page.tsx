@@ -1,7 +1,7 @@
 "use client";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -10,16 +10,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    await signIn("credentials", {
-      email,
-      password,
-      redirect: true,
-      callbackUrl: "/feed",
-    });
-  };
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,15 +20,12 @@ export default function RegisterPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
     });
-
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data?.error || "Register failed");
       setLoading(false);
       return;
     }
-
-    // Jika sukses, langsung sign in pakai NextAuth Credentials
     await signIn("credentials", {
       email,
       password,
