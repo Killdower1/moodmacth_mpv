@@ -19,16 +19,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ users: [], nextCursor: null }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = Number(session.user.id);
     const { searchParams } = new URL(req.url);
     const cursor = searchParams.get('cursor');
     const take = 10;
 
     const [likes, hiddens] = await Promise.all([
-      prisma.like.findMany({ where: { fromId: userId }, select: { toId: true } }),
+      prisma.like.findMany({ where: { fromUser: userId }, select: { toUser: true } }),
       prisma.hidden.findMany({ where: { userId }, select: { hideId: true } }),
     ]);
-    const excludeIds = [userId, ...likes.map(l => l.toId), ...hiddens.map(h => h.hideId)];
+    const excludeIds = [userId, ...likes.map(l => l.toUser), ...hiddens.map(h => h.hideId)];
 
     const users = await prisma.user.findMany({
       where: {
@@ -39,11 +39,11 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
       take,
-      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      ...(cursor ? { skip: 1, cursor: { id: Number(cursor) } } : {}),
       select: {
         id: true,
         name: true,
-        image: true,
+        avatarUrl: true,
         birthdate: true,
         gender: true,
       },
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       users: users.map(u => ({
         id: u.id,
         name: u.name,
-        image: u.image,
+        image: u.avatarUrl,
         age: getAge(u.birthdate),
         gender: u.gender,
       })),

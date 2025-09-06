@@ -2,44 +2,81 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+import { log } from "@/lib/logger";
 
-function calcAge(dobStr: string) {
-  const d = new Date(dobStr);
-  if (Number.isNaN(d.getTime())) return -1;
-  const today = new Date();
-  let age = today.getFullYear() - d.getFullYear();
-  const m = today.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
-  return age;
-}
+const OnboardSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3)
+    .max(32)
+    .regex(/^\w+$/),
+  name: z.string().trim().min(1),
+  bio: z.string().trim().max(500).optional(),
+  gender: z.enum(["male", "female", "other"]).optional(),
+  birthdate: z.string(),
+  avatarUrl: z.string().url().optional(),
+});
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const me = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!me) return NextResponse.json({ error: 'No user' }, { status: 400 });
+  if (!session?.user?.id) {
+    log("POST /api/onboarding: Unauthorized");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const userId = Number(session.user.id);
+  if (Number.isNaN(userId)) {
+    log("POST /api/onboarding: Bad user id", session.user.id);
+    return NextResponse.json({ error: "Bad user id" }, { status: 400 });
+  }
 
-  const fd = await req.formData();
-  const name = String(fd.get('name') || '').trim();
-  const dob = String(fd.get('dob') || '').trim();
-  const gender = String(fd.get('gender') || '').trim();
-  const photo = String(fd.get('photo') || '').trim();
-  const bio = String(fd.get('bio') || '').trim();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const parsed = OnboardSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation error", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
 
-  const age = calcAge(dob);
-  if (age < 0) return NextResponse.json({ error: 'Tanggal lahir tidak valid' }, { status: 400 });
-  if (age < 18) return NextResponse.json({ error: 'Usia minimal 18 tahun' }, { status: 400 });
-
-  await prisma.user.update({
-    where: { id: me.id },
-    data: { name, birthdate: new Date(dob), gender }
-  });
-
-  await prisma.profile.upsert({
-    where: { userId: me.id },
-    update: { bio, photos: photo ? [photo] : [], lat: -6.2, lon: 106.8, interests: [] },
-    create: { userId: me.id, bio, photos: photo ? [photo] : [], lat: -6.2, lon: 106.8, interests: [] }
-  });
-
-  return NextResponse.json({ ok: true });
+  const { username, name, bio, gender, birthdate, avatarUrl } = parsed.data;
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        username,
+        name,
+        bio,
+        gender,
+        birthdate: new Date(birthdate),
+        avatarUrl,
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        bio: true,
+        gender: true,
+        birthdate: true,
+        avatarUrl: true,
+      },
+    });
+    return NextResponse.json({ user });
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      return NextResponse.json(
+        { error: "Username sudah dipakai" },
+        { status: 409 }
+      );
+    }
+    log("POST /api/onboarding: error", err?.message || err);
+    return NextResponse.json({ error: "Onboarding gagal" }, { status: 500 });
+  }
 }

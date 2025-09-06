@@ -8,9 +8,10 @@ import { log } from "@/lib/logger";
 const EditableSchema = z.object({
   name: z.string().min(1).optional(),
   username: z.string().trim().min(3).max(32).optional(),
+  bio: z.string().trim().max(500).optional(),
   gender: z.enum(["male", "female", "other"]).optional(),
   birthdate: z.string().optional(),
-  image: z.string().url().optional(),
+  avatarUrl: z.string().url().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
   }
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, username: true, name: true, gender: true, birthdate: true, image: true },
+    select: { id: true, email: true, username: true, name: true, bio: true, gender: true, birthdate: true, avatarUrl: true },
   });
   if (!user) {
     log("GET /api/me: User not found", userId);
@@ -41,7 +42,11 @@ export async function PATCH(req: NextRequest) {
     log("PATCH /api/me: Unauthorized");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = Number(session.user.id);
+  if (Number.isNaN(userId)) {
+    log("PATCH /api/me: Bad user id", session.user.id);
+    return NextResponse.json({ error: "Bad user id" }, { status: 400 });
+  }
   let body;
   try {
     body = await req.json();
@@ -56,15 +61,16 @@ export async function PATCH(req: NextRequest) {
   }
   const updateData: any = {};
   if (parsed.data.name) updateData.name = parsed.data.name;
+  if (parsed.data.username) updateData.username = parsed.data.username;
+  if (parsed.data.bio) updateData.bio = parsed.data.bio;
   if (parsed.data.gender) updateData.gender = parsed.data.gender;
   if (parsed.data.birthdate) updateData.birthdate = new Date(parsed.data.birthdate);
-  if (parsed.data.image) updateData.image = parsed.data.image;
-  if (parsed.data.username) updateData.username = parsed.data.username;
+  if (parsed.data.avatarUrl) updateData.avatarUrl = parsed.data.avatarUrl;
   try {
     const user = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: { id: true, email: true, username: true, name: true, gender: true, birthdate: true, image: true },
+      select: { id: true, email: true, username: true, name: true, bio: true, gender: true, birthdate: true, avatarUrl: true },
     });
     return NextResponse.json(user);
   } catch (err: any) {

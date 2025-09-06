@@ -9,8 +9,9 @@ export default async function FeedPage() {
 
   if (!session?.user?.id) redirect("/login");
 
+  const userId = Number(session.user.id);
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: userId },
     select: { name: true, gender: true, birthdate: true },
   });
 

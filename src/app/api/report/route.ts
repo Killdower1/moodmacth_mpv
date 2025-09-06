@@ -22,10 +22,10 @@ export async function POST(req: Request) {
   // 5 report per 10 menit per user
   await rateLimit(`report:${me.id}`, 5, 10 * 60 * 1000);
 
-  await prisma.report.create({
+  await prisma.reportDetail.create({
     data: {
       fromUserId: me.id,
-      targetUserId,
+      targetUserId: targetUserId ? Number(targetUserId) : undefined,
       messageId,
       reason,
     },
