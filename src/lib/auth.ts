@@ -9,24 +9,33 @@ export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
-      credentials: { email: { label: "Email", type: "text" }, password: { label: "Password", type: "password" } },
+      credentials: {
+        identifier: { label: "Email or Username", type: "text" },
+        password: { label: "Password", type: "password" }
+      },
       async authorize(credentials) {
         const schema = z.object({
-          email: z.string().email(),
+          identifier: z.string().min(3),
           password: z.string().min(6)
         });
         const parsed = schema.safeParse(credentials);
-        if (!parsed.success) {
-          console.log("Authorize: invalid input", credentials);
-          return null;
-        }
-        const email = parsed.data.email.trim().toLowerCase();
+        if (!parsed.success) return null;
+        const identifier = parsed.data.identifier.trim().toLowerCase();
         const password = parsed.data.password;
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.passwordHash) return null;
-        const valid = await bcrypt.compare(password, user.passwordHash);
+        const where =
+          identifier.includes("@")
+            ? { email: identifier }
+            : { username: identifier };
+        const user = await prisma.user.findUnique({ where });
+        if (!user || !user.password) return null;
+        const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name ?? "", username: user.username ?? null, role: user.role } as any;
+        return {
+          id: String(user.id),
+          email: user.email,
+          username: user.username,
+          name: user.name ?? "",
+        };
       },
     }),
   ],
@@ -35,8 +44,9 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id = String(user.id);
         token.email = user.email;
+        token.username = user.username;
         token.name = user.name ?? "";
       }
       return token;
@@ -45,6 +55,7 @@ export const authOptions: NextAuthOptions = {
       if (token?.id) {
         session.user.id = token.id;
         session.user.email = token.email;
+        session.user.username = token.username;
         session.user.name = token.name;
       }
       return session;
