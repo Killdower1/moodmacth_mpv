@@ -19,7 +19,11 @@ export async function GET(req: NextRequest) {
     log("GET /api/me: Unauthorized");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = Number(session.user.id);
+  if (Number.isNaN(userId)) {
+    log("GET /api/me: Bad user id", session.user.id);
+    return NextResponse.json({ error: "Bad user id" }, { status: 400 });
+  }
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, email: true, username: true, name: true, gender: true, birthdate: true, image: true },
