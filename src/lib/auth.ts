@@ -27,8 +27,8 @@ export const authOptions: NextAuthOptions = {
             ? { email: identifier }
             : { username: identifier };
         const user = await prisma.user.findUnique({ where });
-        if (!user || !user.password) return null;
-        const valid = await bcrypt.compare(password, user.password);
+        if (!user || !user.passwordHash) return null;
+        const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
         return {
           id: user.id,

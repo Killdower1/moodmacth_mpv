@@ -1,0 +1,2 @@
+ALTER TABLE "User" DROP COLUMN IF EXISTS "password";
+ALTER TABLE "User" ALTER COLUMN "passwordHash" SET NOT NULL;
