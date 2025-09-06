@@ -22,7 +22,7 @@ async function main() {
         birthdate,
         bio: faker.lorem.sentence(),
         avatarUrl: faker.image.avatar(),
-        password: passwordHash,
+        passwordHash,
       },
     });
     users.push(user);

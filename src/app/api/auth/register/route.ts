@@ -30,12 +30,12 @@ export async function POST(req: Request) {
       );
     }
     const { name, username, email, password } = parsed.data;
-    const hashed = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, username, email, password: hashed },
+      data: { name, username, email, passwordHash },
       select: { id: true, email: true, username: true, name: true },
     });
-    return NextResponse.json({ user }, { status: 201 });
+    return NextResponse.json(user, { status: 201 });
   } catch (err: any) {
     if (err?.code === "P2002") {
       log("POST /api/auth/register: duplicate", err);
