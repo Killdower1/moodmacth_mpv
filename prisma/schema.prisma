@@ -8,24 +8,27 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  username     String?       @unique
-  passwordHash String?
-  name         String?
-  role         String        @default("user")
-  birthdate    DateTime?
-  gender       String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id         Int       @id @default(autoincrement())
+  email      String    @unique
+  username   String?   @unique
+  password   String
+  name       String?
+  bio        String?
+  gender     String?
+  birthdate  DateTime?
+  avatarUrl  String?
+  role       String    @default("user")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
   profile      Profile?
   reputation   Reputation?
   moodSessions MoodSession[]
 }
 
 model Profile {
-  userId    String   @id
-  user      User     @relation(fields: [userId], references: [id])
+  userId    Int     @id
+  user      User    @relation(fields: [userId], references: [id])
   bio       String?
   photos    String[]
   lat       Float?
@@ -36,7 +39,7 @@ model Profile {
 model MoodSession {
   id         String   @id @default(cuid())
   user       User     @relation(fields: [userId], references: [id])
-  userId     String
+  userId     Int
   mood       String
   intent     String
   boundaries Json
@@ -99,11 +102,11 @@ model Block {
 }
 
 model Reputation {
-  userId       String @id
-  user         User   @relation(fields: [userId], references: [id])
-  reportCount  Int    @default(0)
-  blockCount   Int    @default(0)
-  qualityScore Int    @default(0)
+  userId       Int  @id
+  user         User @relation(fields: [userId], references: [id])
+  reportCount  Int  @default(0)
+  blockCount   Int  @default(0)
+  qualityScore Int  @default(0)
 }
 
 model ReportDetail {

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         name: true,
-        image: true,
+        avatarUrl: true,
         birthdate: true,
         gender: true,
       },
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       users: users.map(u => ({
         id: u.id,
         name: u.name,
-        image: u.image,
+        image: u.avatarUrl,
         age: getAge(u.birthdate),
         gender: u.gender,
       })),

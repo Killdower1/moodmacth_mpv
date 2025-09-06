@@ -1,45 +1,82 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
+
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { log } from "@/lib/logger";
 
-function calcAge(dobStr: string) {
-  const d = new Date(dobStr);
-  if (Number.isNaN(d.getTime())) return -1;
-  const today = new Date();
-  let age = today.getFullYear() - d.getFullYear();
-  const m = today.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
-  return age;
-}
+const OnboardingSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3)
+    .max(32)
+    .regex(/^[a-zA-Z0-9_]+$/)
+    .transform((v) => v.toLowerCase()),
+  name: z.string().min(1),
+  bio: z.string().max(160).optional(),
+  gender: z.string().optional(),
+  birthdate: z.string().optional(),
+  avatarUrl: z.string().url().optional(),
+});
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const me = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!me) return NextResponse.json({ error: 'No user' }, { status: 400 });
-
-  const fd = await req.formData();
-  const name = String(fd.get('name') || '').trim();
-  const dob = String(fd.get('dob') || '').trim();
-  const gender = String(fd.get('gender') || '').trim();
-  const photo = String(fd.get('photo') || '').trim();
-  const bio = String(fd.get('bio') || '').trim();
-
-  const age = calcAge(dob);
-  if (age < 0) return NextResponse.json({ error: 'Tanggal lahir tidak valid' }, { status: 400 });
-  if (age < 18) return NextResponse.json({ error: 'Usia minimal 18 tahun' }, { status: 400 });
-
-  await prisma.user.update({
-    where: { id: me.id },
-    data: { name, birthdate: new Date(dob), gender }
-  });
-
-  await prisma.profile.upsert({
-    where: { userId: me.id },
-    update: { bio, photos: photo ? [photo] : [], lat: -6.2, lon: 106.8, interests: [] },
-    create: { userId: me.id, bio, photos: photo ? [photo] : [], lat: -6.2, lon: 106.8, interests: [] }
-  });
-
-  return NextResponse.json({ ok: true });
+  if (!session?.user?.id) {
+    log("POST /api/onboarding: Unauthorized");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const userId = Number(session.user.id);
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const parsed = OnboardingSchema.safeParse(body);
+  if (!parsed.success) {
+    log("POST /api/onboarding: Validation error", parsed.error.flatten());
+    return NextResponse.json({ error: "Validation error" }, { status: 400 });
+  }
+  const data: any = {
+    username: parsed.data.username,
+    name: parsed.data.name,
+  };
+  if (parsed.data.bio) data.bio = parsed.data.bio;
+  if (parsed.data.gender) data.gender = parsed.data.gender;
+  if (parsed.data.birthdate) data.birthdate = new Date(parsed.data.birthdate);
+  if (parsed.data.avatarUrl) data.avatarUrl = parsed.data.avatarUrl;
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        bio: true,
+        gender: true,
+        birthdate: true,
+        avatarUrl: true,
+      },
+    });
+    return NextResponse.json(user);
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      return NextResponse.json(
+        { error: "Username/email already used" },
+        { status: 409 }
+      );
+    }
+    if (err?.code === "P2025") {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    log("POST /api/onboarding: Internal server error", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
