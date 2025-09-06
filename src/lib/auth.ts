@@ -1,51 +1,62 @@
-import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
-export const authOptions: NextAuthOptions = {
+import { prisma } from "@/lib/prisma";
+
+export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "Credentials",
-      credentials: { email: { label: "Email", type: "text" }, password: { label: "Password", type: "password" } },
+      credentials: {
+        identifier: { label: "Email or Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
       async authorize(credentials) {
         const schema = z.object({
-          email: z.string().email(),
-          password: z.string().min(6)
+          identifier: z.string().min(1),
+          password: z.string().min(6),
         });
         const parsed = schema.safeParse(credentials);
         if (!parsed.success) {
-          console.log("Authorize: invalid input", credentials);
           return null;
         }
-        const email = parsed.data.email.trim().toLowerCase();
-        const password = parsed.data.password;
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.passwordHash) return null;
-        const valid = await bcrypt.compare(password, user.passwordHash);
+        const { identifier, password } = parsed.data;
+        const where = identifier.includes("@")
+          ? { email: identifier.toLowerCase() }
+          : { username: identifier };
+        const user = await prisma.user.findUnique({ where });
+        if (!user) return null;
+        const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name ?? "", username: user.username ?? null, role: user.role } as any;
+        return {
+          id: user.id.toString(),
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        } as any;
       },
     }),
   ],
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        token.name = user.name ?? "";
+        token.username = user.username;
+        if ((user as any).role) token.role = (user as any).role;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (token?.id) {
-        session.user.id = token.id;
-        session.user.email = token.email;
-        session.user.name = token.name;
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+        session.user.username = token.username as string | undefined;
+        if (token.role) session.user.role = token.role as string;
       }
       return session;
     },
