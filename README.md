@@ -25,13 +25,20 @@ cp .env.example .env
 # Ubah NEXTAUTH_SECRET dan whitelist email Anda di TEST_OTP_WHITELIST
 ```
 
-4) Migrate & seed:
+4) Generate Prisma client & push schema:
 ```bash
-pnpm prisma migrate dev --name init
+pnpm prisma generate
+pnpm db:push
+```
+
+> **Note:** If you encounter a Prisma engine mismatch (often on Windows), remove `.next` and `node_modules/.prisma` then rerun `pnpm prisma generate`.
+
+5) Seed demo data:
+```bash
 pnpm seed
 ```
 
-5) Run dev:
+6) Run dev:
 ```bash
 pnpm dev
 ```
