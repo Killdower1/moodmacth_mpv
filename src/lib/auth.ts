@@ -21,14 +21,9 @@ export const authOptions: NextAuthOptions = {
         }
         const email = parsed.data.email.trim().toLowerCase();
         const password = parsed.data.password;
-        console.log("Authorize: mencari user dengan email", email);
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.passwordHash) {
-          console.log("Authorize: user not found", email);
-          return null;
-        }
+        if (!user || !user.passwordHash) return null;
         const valid = await bcrypt.compare(password, user.passwordHash);
-        console.log("Authorize: compare result", valid);
         if (!valid) return null;
         return { id: user.id, email: user.email, name: user.name ?? "" };
       },
@@ -38,11 +33,19 @@ export const authOptions: NextAuthOptions = {
   pages: { signIn: "/login" },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.uid = user.id;
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name ?? "";
+      }
       return token;
     },
     async session({ session, token }) {
-      if (token?.uid) session.user.id = token.uid as string;
+      if (token?.id) {
+        session.user.id = token.id;
+        session.user.email = token.email;
+        session.user.name = token.name;
+      }
       return session;
     },
   },
