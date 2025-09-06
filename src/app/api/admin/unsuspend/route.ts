@@ -6,10 +6,10 @@ export async function POST(req: Request) {
   try {
     await requireAdminEmails();
     const fd = await req.formData();
-    const userId = String(fd.get("userId") || "");
+    const userId = Number(fd.get("userId"));
     if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
-    const placeholder = `https://picsum.photos/seed/${userId.slice(0,6)}/400/600`;
+    const placeholder = `https://picsum.photos/seed/${String(userId).slice(0,6)}/400/600`;
     await prisma.profile.upsert({
       where: { userId },
       update: { photos: [placeholder], bio: "Reactivated by admin", lat: -6.2, lon: 106.8, interests: [] },

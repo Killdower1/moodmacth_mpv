@@ -5,10 +5,10 @@ import bcrypt from "bcryptjs";
 import { log } from "@/lib/logger";
 
 const RegisterSchema = z.object({
-  name: z.string().trim().min(1, "Nama wajib"),
-  username: z.string().trim().min(3).max(32),
   email: z.string().trim().toLowerCase().email("Email tidak valid"),
+  username: z.string().trim().min(3).max(32).regex(/^\w+$/).optional(),
   password: z.string().min(6, "Minimal 6 karakter"),
+  name: z.string().trim().min(1).optional(),
 });
 
 export async function POST(req: Request) {
@@ -30,16 +30,9 @@ export async function POST(req: Request) {
       );
     }
     const { name, username, email, password } = parsed.data;
-    const existed = await prisma.user.findUnique({ where: { email } });
-    if (existed) {
-      return NextResponse.json(
-        { error: "Email sudah terdaftar" },
-        { status: 409 }
-      );
-    }
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, username, email, passwordHash: hashed },
+      data: { name, username, email, password: hashed },
       select: { id: true, email: true, username: true, name: true },
     });
     return NextResponse.json({ user }, { status: 201 });
@@ -47,7 +40,7 @@ export async function POST(req: Request) {
     if (err?.code === "P2002") {
       log("POST /api/auth/register: duplicate", err);
       return NextResponse.json(
-        { error: "Email sudah dipakai (unik)" },
+        { error: "Email atau username sudah dipakai" },
         { status: 409 }
       );
     }

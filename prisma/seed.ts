@@ -20,14 +20,9 @@ async function main() {
         name: `User ${i}`,
         gender,
         birthdate,
-        passwordHash,
-        profile: {
-          create: {
-            bio: faker.lorem.sentence(),
-            interests: [],
-            photos: [],
-          },
-        },
+        bio: faker.lorem.sentence(),
+        avatarUrl: faker.image.avatar(),
+        password: passwordHash,
       },
     });
     users.push(user);

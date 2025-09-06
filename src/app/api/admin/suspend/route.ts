@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     await requireAdminEmails();
     const fd = await req.formData();
-    const userId = String(fd.get("userId") || "");
+    const userId = Number(fd.get("userId"));
     if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
     await prisma.profile.deleteMany({ where: { userId } });

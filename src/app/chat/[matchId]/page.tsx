@@ -13,7 +13,7 @@ export default async function ChatPage({ params }: { params: { matchId: string }
     return (
         <div className="card">
             <h2>Chat</h2>
-            <MessagesList matchId={params.matchId} meId={me.id} />
+            <MessagesList matchId={params.matchId} meId={String(me.id)} />
             <SendMessageForm matchId={params.matchId} />
         </div>
     );

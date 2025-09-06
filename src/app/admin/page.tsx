@@ -14,7 +14,7 @@ export default async function AdminPage() {
   ]);
 
   // Build index user untuk label
-  const ids = new Set<string>();
+  const ids = new Set<number>();
   users.forEach(u => ids.add(u.id));
   matches.forEach((m:any)=> { if(m.userA) ids.add(m.userA); if(m.userB) ids.add(m.userB); });
   messages.forEach((m:any)=> { if(m.fromUser) ids.add(m.fromUser); });
@@ -26,10 +26,10 @@ export default async function AdminPage() {
     select: { id: true, email: true, name: true },
   })).map(u => [u.id, u]));
 
-  const ulabel = (id?: string|null) => {
+  const ulabel = (id?: number|null) => {
     if(!id) return "—";
     const u = mapUsers.get(id);
-    return u ? (u.name || u.email) : `(unknown:${id.slice(0,6)})`;
+    return u ? (u.name || u.email) : `(unknown:${String(id).slice(0,6)})`;
   };
 
   return (
@@ -46,11 +46,11 @@ export default async function AdminPage() {
               <div style={{marginTop:6}}>Profile: <span className="badge">{u.profile ? "YES" : "NO"}</span></div>
               <div style={{display:"flex", gap:8, marginTop:8}}>
                 <form action="/api/admin/suspend" method="post">
-                  <input type="hidden" name="userId" value={u.id} />
+                  <input type="hidden" name="userId" value={String(u.id)} />
                   <button className="btn" disabled={!u.profile}>Suspend</button>
                 </form>
                 <form action="/api/admin/unsuspend" method="post">
-                  <input type="hidden" name="userId" value={u.id} />
+                  <input type="hidden" name="userId" value={String(u.id)} />
                   <button className="btn">Unsuspend</button>
                 </form>
               </div>
@@ -112,7 +112,7 @@ export default async function AdminPage() {
               <div style={{marginTop:6, whiteSpace:"pre-wrap"}}>{r.reason}</div>
               <div style={{display:"flex", gap:8, marginTop:8}}>
                 <form action="/api/admin/suspend" method="post">
-                  <input type="hidden" name="userId" value={r.targetUserId || ""} />
+                  <input type="hidden" name="userId" value={r.targetUserId ? String(r.targetUserId) : ""} />
                   <button className="btn" disabled={!r.targetUserId}>Suspend Target</button>
                 </form>
               </div>

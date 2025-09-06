@@ -5,14 +5,14 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 const DislikeSchema = z.object({
-  toId: z.string().min(1),
+  toId: z.number(),
 });
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const userId = session.user.id;
+  const userId = Number(session.user.id);
   const body = await req.json();
   const parse = DislikeSchema.safeParse(body);
   if (!parse.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 });

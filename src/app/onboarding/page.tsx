@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 export default function OnboardingPage() {
   const router = useRouter();
   const [form, setForm] = useState({
+    username: "",
     name: "",
     gender: "",
     birthdate: "",
-    image: "",
+    avatarUrl: "",
+    bio: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -28,7 +30,7 @@ export default function OnboardingPage() {
   }, [router]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -37,19 +39,19 @@ export default function OnboardingPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await fetch("/api/me", {
-      method: "PATCH",
+    const res = await fetch("/api/onboarding", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     if (res.ok) {
-      router.replace("/feed");
-    } else {
-      let data = {};
-      try { data = await res.json(); } catch {}
-      setError(data?.error || "Failed to update profile");
-      setLoading(false);
-    }
+      router.replace("/");
+      } else {
+        let data: any = {};
+        try { data = await res.json(); } catch {}
+        setError(data?.error || "Failed to update profile");
+        setLoading(false);
+      }
   };
 
   return (
@@ -62,6 +64,18 @@ export default function OnboardingPage() {
           Complete Your Profile
         </h2>
         {error && <div className="text-red-500 text-sm">{error}</div>}
+        <div>
+          <label className="block text-sm font-medium mb-1">Username</label>
+          <input
+            type="text"
+            name="username"
+            required
+            value={form.username}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+            placeholder="username"
+          />
+        </div>
         <div>
           <label className="block text-sm font-medium mb-1">Name</label>
           <input
@@ -101,16 +115,24 @@ export default function OnboardingPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
-            Avatar URL (optional)
-          </label>
+          <label className="block text-sm font-medium mb-1">Avatar URL (optional)</label>
           <input
             type="url"
-            name="image"
-            value={form.image}
+            name="avatarUrl"
+            value={form.avatarUrl}
             onChange={handleChange}
             className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
             placeholder="https://..."
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Bio (optional)</label>
+          <textarea
+            name="bio"
+            value={form.bio}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+            placeholder="Tell us about yourself"
           />
         </div>
         <button
