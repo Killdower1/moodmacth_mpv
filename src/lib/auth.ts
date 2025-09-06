@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -25,7 +26,7 @@ export const authOptions: NextAuthOptions = {
         if (!user || !user.passwordHash) return null;
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name ?? "" };
+        return { id: user.id, email: user.email, name: user.name ?? "", username: user.username ?? null, role: user.role } as any;
       },
     }),
   ],
@@ -37,14 +38,18 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name ?? "";
+        token.username = (user as any).username ?? null;
+        token.role = (user as any).role ?? "user";
       }
       return token;
     },
     async session({ session, token }) {
-      if (token?.id) {
-        session.user.id = token.id;
-        session.user.email = token.email;
-        session.user.name = token.name;
+      if (token?.id && session.user) {
+        (session.user as any).id = token.id;
+        session.user.email = token.email as string;
+        session.user.name = token.name as string;
+        (session.user as any).username = token.username as any;
+        (session.user as any).role = token.role as any;
       }
       return session;
     },
