@@ -16,25 +16,38 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         const schema = z.object({
           identifier: z.string().min(3),
-          password: z.string().min(6)
+          password: z.string().min(6),
         });
         const parsed = schema.safeParse(credentials);
         if (!parsed.success) return null;
+
         const identifier = parsed.data.identifier.trim().toLowerCase();
-        const password = parsed.data.password;
-        const where =
-          identifier.includes("@")
-            ? { email: identifier }
-            : { username: identifier };
-        const user = await prisma.user.findUnique({ where });
-        if (!user || !user.passwordHash) return null;
-        const valid = await bcrypt.compare(password, user.passwordHash);
+        const pwd = parsed.data.password;
+
+        const where = identifier.includes("@")
+          ? { email: identifier }
+          : { username: identifier };
+
+        const user = await prisma.user.findUnique({
+          where,
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            name: true,
+            passwordHash: true,
+          },
+        });
+        if (!user) return null;
+
+        const valid = await bcrypt.compare(pwd, user.passwordHash);
         if (!valid) return null;
+
         return {
-          id: user.id,
+          id: String(user.id),
           email: user.email,
           username: user.username,
-          name: user.name ?? "",
+          name: user.name ?? null,
         };
       },
     }),

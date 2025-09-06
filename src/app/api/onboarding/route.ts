@@ -68,7 +68,7 @@ export async function POST(req: Request) {
         avatarUrl: true,
       },
     });
-    return NextResponse.json({ user });
+    return NextResponse.json(user);
   } catch (err: any) {
     if (err?.code === "P2002") {
       return NextResponse.json(

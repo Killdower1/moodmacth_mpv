@@ -6,8 +6,8 @@ import { log } from "@/lib/logger";
 
 const RegisterSchema = z.object({
   email: z.string().trim().toLowerCase().email("Email tidak valid"),
-  username: z.string().trim().min(3).max(32).regex(/^\w+$/).optional(),
   password: z.string().min(6, "Minimal 6 karakter"),
+  username: z.string().trim().min(3).max(32).regex(/^\w+$/).optional(),
   name: z.string().trim().min(1).optional(),
 });
 
@@ -29,10 +29,15 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const { name, username, email, password } = parsed.data;
-    const passwordHash = await bcrypt.hash(password, 10);
+    const { name, username, email, password: pwd } = parsed.data;
+    const passwordHash = await bcrypt.hash(pwd, 10);
     const user = await prisma.user.create({
-      data: { name, username, email, passwordHash },
+      data: {
+        email,
+        username: username ?? null,
+        name: name ?? null,
+        passwordHash,
+      },
       select: { id: true, email: true, username: true, name: true },
     });
     return NextResponse.json(user, { status: 201 });
