@@ -6,15 +6,16 @@ const prisma = new PrismaClient();
 const PASSWORD = 'Password123!';
 
 async function main() {
-  await prisma.user.deleteMany();
   const passwordHash = await bcrypt.hash(PASSWORD, 10);
 
-  const users = [];
+  const userIds: number[] = [];
   for (let i = 1; i <= 40; i++) {
     const gender = faker.helpers.arrayElement(['male', 'female', 'other']);
     const birthdate = faker.date.birthdate({ min: 18, max: 40, mode: 'age' });
-    const user = await prisma.user.create({
-      data: {
+    const user = await prisma.user.upsert({
+      where: { email: `user${i}@example.com` },
+      update: {},
+      create: {
         email: `user${i}@example.com`,
         username: `user${i}`,
         name: `User ${i}`,
@@ -24,18 +25,22 @@ async function main() {
         avatarUrl: faker.image.avatar(),
         passwordHash,
       },
+      select: { id: true },
     });
-    users.push(user);
+    userIds.push(user.id);
   }
 
   // create demo matches
   for (let i = 0; i < 10; i++) {
-    const a = users[i];
-    const b = users[39 - i];
-    await prisma.match.create({
-      data: {
-        userA: a.id,
-        userB: b.id,
+    const a = userIds[i];
+    const b = userIds[39 - i];
+    await prisma.match.upsert({
+      where: { id: `seed-${a}-${b}` },
+      update: {},
+      create: {
+        id: `seed-${a}-${b}`,
+        userA: a,
+        userB: b,
       },
     });
   }

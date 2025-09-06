@@ -59,7 +59,7 @@ export async function PATCH(req: NextRequest) {
     log("PATCH /api/me: Validation error", parsed.error.flatten());
     return NextResponse.json({ error: "Validation error", details: parsed.error.flatten() }, { status: 400 });
   }
-  const updateData: any = {};
+  const updateData: Record<string, any> = {};
   if (parsed.data.name) updateData.name = parsed.data.name;
   if (parsed.data.username) updateData.username = parsed.data.username;
   if (parsed.data.bio) updateData.bio = parsed.data.bio;
