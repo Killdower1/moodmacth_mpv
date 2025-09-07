@@ -1,68 +1,90 @@
-// ONE-CARD-ONLY deck with drag gestures.
 "use client";
-import { useState } from "react";
-import { motion, useMotionValue, useTransform, useAnimationControls } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, useAnimationControls, useMotionValue, useTransform } from "framer-motion";
 import ProfileCard, { type Profile } from "./ProfileCard";
 
-export default function SwipeDeck({ profiles }: { profiles: Profile[] }) {
-  const [idx, setIdx] = useState(0);
-  const current = profiles[idx];
+export default function SwipeDeck() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [busy, setBusy] = useState(false);
+  const lastStack = useRef<string[]>([]);
 
   const controls = useAnimationControls();
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-220, 0, 220], [-15, 0, 15]);
 
-  const SWIPE_OFFSET = 120;
-  const SWIPE_POWER  = 220;
-
-  if (!current) {
-    return (
-      <div className="grid place-items-center h-[70vh] text-white/70">
-        No more profiles
-      </div>
-    );
+  async function loadNext() {
+    setBusy(true);
+    const res = await fetch("/api/feed", { cache: "no-store" }).then(r => r.json());
+    setProfile(res.profile);
+    setBusy(false);
   }
 
-  async function advance(dir: 1 | -1) {
+  useEffect(() => { loadNext(); }, []);
+
+  async function advance(dir: 1 | -1, action: "LIKE" | "DISLIKE") {
+    if (!profile) return;
+    lastStack.current.push(profile.id);
     await controls.start({
       x: dir * (typeof window === "undefined" ? 800 : window.innerWidth * 1.1),
       rotate: dir * 20,
-      opacity: 0,
-      transition: { duration: 0.25 },
+      opacity: 0, transition: { duration: 0.25 },
     });
     controls.set({ x: 0, rotate: 0, opacity: 1 });
-    setIdx((i) => Math.min(i + 1, profiles.length));
+
+    fetch("/api/swipe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetId: profile.id, action }),
+    }).then(r => r.json()).then(data => {
+      if (data?.matched) {
+        console.log("It's a match!", data.matchId);
+      }
+    }).catch(() => {});
+
+    await loadNext();
   }
 
   function onDragEnd(_: any, info: { offset: { x: number }, velocity: { x: number } }) {
     const power = Math.abs(info.offset.x) + Math.abs(info.velocity.x) * 0.2;
-    if (power > SWIPE_POWER || Math.abs(info.offset.x) > SWIPE_OFFSET) {
-      advance(info.offset.x > 0 ? 1 : -1);
+    if (power > 220 || Math.abs(info.offset.x) > 120) {
+      advance(info.offset.x > 0 ? 1 : -1, info.offset.x > 0 ? "LIKE" : "DISLIKE");
     } else {
       controls.start({ x: 0, rotate: 0, opacity: 1, transition: { type: "spring", stiffness: 380, damping: 28 } });
     }
   }
 
+  async function undo() {
+    const prev = lastStack.current.pop();
+    if (!prev) return;
+    await fetch(`/api/swipe?targetId=${prev}`, { method: "DELETE" });
+    loadNext();
+  }
+
+  if (!profile) {
+    return <div className="grid place-items-center h-[70vh] text-white/70">No more profiles</div>;
+  }
+
   return (
-    // area deck tinggi cukup + center; hanya 1 kartu
     <div className="relative h-[82vh] w-full">
       <div className="absolute inset-0 grid place-items-center px-4">
         <motion.div
           className="w-full max-w-sm"
           style={{ x, rotate }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.2}
+          drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2}
           onDragEnd={onDragEnd}
           animate={controls}
           initial={{ opacity: 1 }}
         >
           <ProfileCard
-            profile={current}
-            onLike={() => advance(1)}
-            onDislike={() => advance(-1)}
+            profile={profile}
+            onLike={() => advance(1, "LIKE")}
+            onDislike={() => advance(-1, "DISLIKE")}
           />
         </motion.div>
+        <button onClick={undo} disabled={busy}
+          className="absolute bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full border border-white/20 bg-white/10">
+          Undo
+        </button>
       </div>
     </div>
   );
