@@ -1,9 +1,8 @@
-
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/options"; // adjust if different
+export { authOptions } from "@/app/api/auth/[...nextauth]/options"; // pastikan file ini ada
 
 export async function requireUser() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) throw new Error("UNAUTHENTICATED");
-  return session.user as { id: string; email?: string | null; name?: string | null };
+  const s = await getServerSession(authOptions);
+  if (!s?.user?.id) throw new Error("UNAUTHENTICATED");
+  return s.user as { id: string; email?: string | null; name?: string | null };
 }

@@ -3,27 +3,37 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { Nunito } from "next/font/google";
+import Link from "next/link";
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
-  const session = await getServerSession(authOptions);
-  return (
-    <html lang="en">
-      <body>
-        <div className="container">
-          <header className="grid grid-2" style={{alignItems:'center'}}>
-            <div><Link href="/"><h1 style={{margin:0}}>Moodmacth</h1></Link></div>
-            <nav style={{textAlign:'right'}}>
-              {session ? (
-                <Link className="btn" href="/me">My Profile</Link>
-              ) : (
-                <Link className="btn" href="/login">Login</Link>
-              )}
-            </nav>
-          </header>
-          <main style={{marginTop:16}}>{children}</main>
-          <footer style={{marginTop:32, opacity:0.6}}>© {new Date().getFullYear()} Moodmacth</footer>
-        </div>
-      </body>
-    </html>
-  );
+const nunito = Nunito({ subsets: ["latin"], weight: ["400", "600", "700"] });
+
+export const metadata = { title: "Moodmatch", description: "Find your vibe" };
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <html lang="en">
+            <body className={`${nunito.className} bg-[#0b0f14] text-white min-h-screen`}>
+                {/* Header kuning ala Bumble */}
+                <header className="sticky top-0 z-20 bg-[#FFCD00] text-black">
+                    <div className="mx-auto max-w-md px-4 py-3 flex items-center justify-between">
+                        <Link href="/feed" className="font-extrabold tracking-wide">moodmatch</Link>
+                        <nav className="text-sm flex gap-3">
+                            <Link href="/mood" className="hover:underline">Mood</Link>
+                            <Link href="/match" className="hover:underline">Matches</Link>
+                        </nav>
+                    </div>
+                </header>
+
+                {/* Container pusat semua halaman */}
+                <main className="mx-auto max-w-md px-4 py-6">
+                    {children}
+                </main>
+
+                <footer className="mx-auto max-w-md px-4 py-8 text-white/50 text-sm">
+                    © {new Date().getFullYear()} Moodmatch
+                </footer>
+            </body>
+        </html>
+    );
 }
