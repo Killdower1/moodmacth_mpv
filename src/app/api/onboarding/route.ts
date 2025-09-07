@@ -1,29 +1,52 @@
 ﻿import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
-import { requireUser } from "@/lib/auth";
-import { toIntId } from "@/lib/id";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-export async function PATCH(req: Request) {
+export async function POST(req: Request) {
   try {
-    const me = await requireUser();
-    const meId = toIntId(me.id);
-    const { gender, birthYear, photo } = await req.json();
-    const birthdate = birthYear ? new Date(Number(birthYear), 0, 1) : undefined;
-    await prisma.user.update({
-      where: { id: meId },
-      data: {
-        gender: gender || undefined,
-        birthdate,
-        photos: photo
-          ? {
-              create: { url: photo, isPrimary: true }}
-          : undefined}});
-    return NextResponse.json({ ok: true });
+    const session = await getServerSession(authOptions);
+    const userId = String((session as any)?.user?.id ?? "");
+    if (!userId) {
+      return NextResponse.json({ ok: false, error: "UNAUTHENTICATED" }, { status: 401 });
+    }
+
+    const { name, birthdate, gender } = await req.json();
+    const results: Array<{field:string; ok:boolean}> = [];
+    const ops: Promise<any>[] = [];
+
+    if (typeof name === "string" && name.trim()) {
+      ops.push(
+        prisma.user.update({ where: { id: userId }, data: { name: name.trim() } })
+          .then(()=>results.push({field:"name", ok:true}))
+          .catch(()=>results.push({field:"name", ok:false}))
+      );
+    }
+
+    if (typeof birthdate === "string" && birthdate) {
+      const d = new Date(birthdate);
+      if (!Number.isNaN(d.getTime())) {
+        ops.push(
+          prisma.user.update({ where: { id: userId }, data: { birthdate: d } })
+            .then(()=>results.push({field:"birthdate", ok:true}))
+            .catch(()=>results.push({field:"birthdate", ok:false}))
+        );
+      }
+    }
+
+    if (typeof gender === "string" && gender) {
+      ops.push(
+        prisma.user.update({ where: { id: userId }, data: { gender } })
+          .then(()=>results.push({field:"gender", ok:true}))
+          .catch(()=>results.push({field:"gender", ok:false}))
+      );
+    }
+
+    await Promise.all(ops).catch(()=>{ /* swallow */ });
+
+    return NextResponse.json({ ok: true, results }, { status: 200 });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
+    // jangan 500; balikin info error ringan biar UI tetap lanjut
+    return NextResponse.json({ ok: false, error: e?.message ?? "onboarding_failed" }, { status: 200 });
   }
 }
-
-
-
-
