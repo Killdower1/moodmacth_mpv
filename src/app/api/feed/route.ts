@@ -1,65 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
+import { normalizeProfile } from "@/lib/normalizeProfiles";
 
-function getAge(birthdate?: Date | null) {
-  if (!birthdate) return undefined;
-  const now = new Date();
-  let age = now.getFullYear() - birthdate.getFullYear();
-  const m = now.getMonth() - birthdate.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birthdate.getDate())) age--;
-  return age;
-}
-
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ users: [], nextCursor: null }, { status: 401 });
-    }
+    const me = await requireUser();
 
-    const userId = Number(session.user.id);
-    const { searchParams } = new URL(req.url);
-    const cursor = searchParams.get('cursor');
-    const take = 10;
+    const pref = await prisma.preference.findUnique({ where: { userId: me.id } });
 
-    const [likes, hiddens] = await Promise.all([
-      prisma.like.findMany({ where: { fromUser: userId }, select: { toUser: true } }),
-      prisma.hidden.findMany({ where: { userId }, select: { hideId: true } }),
+    const swiped = await prisma.swipe.findMany({ where: { fromId: me.id }, select: { toId: true } });
+    const matchedA = await prisma.match.findMany({ where: { userAId: me.id }, select: { userBId: true } });
+    const matchedB = await prisma.match.findMany({ where: { userBId: me.id }, select: { userAId: true } });
+    const blocks1 = await prisma.block.findMany({ where: { byId: me.id }, select: { targetId: true } });
+    const blocks2 = await prisma.block.findMany({ where: { targetId: me.id }, select: { byId: true } });
+
+    const excludeIds = new Set<string>([
+      me.id,
+      ...swiped.map(s => s.toId),
+      ...matchedA.map(m => m.userBId),
+      ...matchedB.map(m => m.userAId),
+      ...blocks1.map(b => b.targetId),
+      ...blocks2.map(b => b.byId),
     ]);
-    const excludeIds = [userId, ...likes.map(l => l.toUser), ...hiddens.map(h => h.hideId)];
 
-    const users = await prisma.user.findMany({
+    const candidate = await prisma.user.findFirst({
       where: {
-        id: { notIn: excludeIds },
-        name: { not: null },
-        gender: { not: null },
-        birthdate: { not: null },
+        id: { notIn: Array.from(excludeIds) },
+        ...(pref?.preferredGenders?.length ? { gender: { in: pref!.preferredGenders } } : {}),
+        ...(pref ? { age: { gte: pref.minAge, lte: pref.maxAge } } : {}),
       },
-      orderBy: { createdAt: 'desc' },
-      take,
-      ...(cursor ? { skip: 1, cursor: { id: Number(cursor) } } : {}),
-      select: {
-        id: true,
-        name: true,
-        avatarUrl: true,
-        birthdate: true,
-        gender: true,
-      },
+      orderBy: [{ lastActiveAt: "desc" }, { createdAt: "desc" }],
+      include: { photos: true },
     });
 
-    return NextResponse.json({
-      users: users.map(u => ({
-        id: u.id,
-        name: u.name,
-        image: u.avatarUrl,
-        age: getAge(u.birthdate),
-        gender: u.gender,
-      })),
-      nextCursor: users.length === take ? users[users.length - 1].id : null,
-    });
-  } catch (err) {
-    return NextResponse.json({ users: [], nextCursor: null }, { status: 500 });
+    if (!candidate) return NextResponse.json({ profile: null });
+
+    const profile = normalizeProfile(candidate);
+    return NextResponse.json({ profile });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }
 }
