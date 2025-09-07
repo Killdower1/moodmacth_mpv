@@ -11,42 +11,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "UNAUTHENTICATED" }, { status: 401 });
     }
 
-    const { name, birthdate, gender } = await req.json();
-    const results: Array<{field:string; ok:boolean}> = [];
-    const ops: Promise<any>[] = [];
+    const body = await req.json();
+    const name: unknown = body?.name;
+    const birthdate: unknown = body?.birthdate;
+    const gender: unknown = body?.gender;
 
-    if (typeof name === "string" && name.trim()) {
-      ops.push(
-        prisma.user.update({ where: { id: userId }, data: { name: name.trim() } })
-          .then(()=>results.push({field:"name", ok:true}))
-          .catch(()=>results.push({field:"name", ok:false}))
-      );
+    // Ambil daftar kolom yang ADA pada tabel User
+    // (handle case-sensitive: 'User' & 'user')
+    const columns = await prisma.$queryRaw<
+      { column_name: string }[]
+    >`SELECT column_name
+       FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name IN ('User','user');`;
+
+    const colset = new Set(columns.map(c => c.column_name));
+
+    // Bangun data update hanya dari kolom yang tersedia
+    const data: Record<string, any> = {};
+    if (colset.has("name") && typeof name === "string" && name.trim()) {
+      data.name = name.trim();
     }
-
-    if (typeof birthdate === "string" && birthdate) {
+    if (colset.has("gender") && typeof gender === "string" && gender) {
+      data.gender = gender;
+    }
+    if (colset.has("birthdate") && typeof birthdate === "string" && birthdate) {
       const d = new Date(birthdate);
-      if (!Number.isNaN(d.getTime())) {
-        ops.push(
-          prisma.user.update({ where: { id: userId }, data: { birthdate: d } })
-            .then(()=>results.push({field:"birthdate", ok:true}))
-            .catch(()=>results.push({field:"birthdate", ok:false}))
-        );
-      }
+      if (!Number.isNaN(d.getTime())) data.birthdate = d;
+    }
+    // JANGAN pernah set "age" di sini walau ada di schema lama
+
+    // Kalau tidak ada apapun untuk diupdate, tetap OK
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ ok: true, updated: [] }, { status: 200 });
     }
 
-    if (typeof gender === "string" && gender) {
-      ops.push(
-        prisma.user.update({ where: { id: userId }, data: { gender } })
-          .then(()=>results.push({field:"gender", ok:true}))
-          .catch(()=>results.push({field:"gender", ok:false}))
-      );
-    }
-
-    await Promise.all(ops).catch(()=>{ /* swallow */ });
-
-    return NextResponse.json({ ok: true, results }, { status: 200 });
+    await prisma.user.update({ where: { id: userId }, data });
+    return NextResponse.json({ ok: true, updated: Object.keys(data) }, { status: 200 });
   } catch (e: any) {
-    // jangan 500; balikin info error ringan biar UI tetap lanjut
+    // Jangan pecahin flow, balikin 200 dengan flag ok:false supaya UI tetap lanjut
     return NextResponse.json({ ok: false, error: e?.message ?? "onboarding_failed" }, { status: 200 });
   }
 }

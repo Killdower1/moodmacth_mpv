@@ -1,68 +1,57 @@
 ﻿import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
-import { requireUser } from "@/lib/auth";
-import { calcAge } from "@/lib/age";
-import { Mood } from "@prisma/client";
-import { toIntId } from "@/lib/id";
-import { getCurrentMood } from "@/lib/mood";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-export async function GET(req: Request) {
-  try {
-    const meUser = await requireUser();
-    const meId = toIntId(meUser.id);
-
-    const url = new URL(req.url);
-    const qMood = url.searchParams.get("mood") as Mood | null;
-    const mood = qMood ?? await getCurrentMood(meId);
-
-    const pref = await prisma.preference.findUnique({ where: { userId: meId } });
-
-    const swiped = await prisma.swipe.findMany({ where: { fromId: meId }, select: { toId: true } });
-    const matchedA = await prisma.match.findMany({ where: { userAId: meId }, select: { userBId: true } });
-    const matchedB = await prisma.match.findMany({ where: { userBId: meId }, select: { userAId: true } });
-    const blocks1 = await prisma.block.findMany({ where: { byId: meId }, select: { targetId: true } });
-    const blocks2 = await prisma.block.findMany({ where: { targetId: meId }, select: { byId: true } });
-
-    const excludeIds = new Set<number>([
-      meId,
-      ...swiped.map(s => s.toId),
-      ...matchedA.map(m => m.userBId),
-      ...matchedB.map(m => m.userAId),
-      ...blocks1.map(b => b.targetId),
-      ...blocks2.map(b => b.byId),
-    ]);
-
-    const candidate = await prisma.user.findFirst({
-      where: {
-        id: { notIn: Array.from(excludeIds) },
-        ...(pref?.preferredGenders?.length ? { gender: { in: pref.preferredGenders } } : {}),
-        // TODO: filter by birthdate range
-        // mood filtering skipped for now
-      },
-      orderBy: [{ lastActiveAt: "desc" }, { createdAt: "desc" }],
-      select: {
-        id: true,
-        name: true,
-        gender: true,
-        birthdate: true,
-        photos: true}});
-
-    if (!candidate) return NextResponse.json({ profile: null });
-
-    const photo = candidate.photos?.find?.((p:any)=>p.isPrimary)?.url
-             ?? candidate.photos?.[0]?.url
-             ?? "https://cdn.jsdelivr.net/gh/faker-js/assets-person-portrait/male/512/1.jpg";
-
-    const age = calcAge(candidate.birthdate) ?? 21;
-
-    return NextResponse.json({
-      profile: { id: candidate.id, name: candidate.name, age, gender: candidate.gender ?? "other", photo }
-    });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
-  }
+function calcAge(b?: Date | string | null) {
+  if (!b) return null;
+  const d = new Date(b);
+  if (Number.isNaN(d.getTime())) return null;
+  const n = new Date();
+  let a = n.getFullYear() - d.getFullYear();
+  const m = n.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && n.getDate() < d.getDate())) a--;
+  return a;
 }
 
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    const me = String((session as any)?.user?.id ?? "");
 
+    // Kolom yang tersedia di tabel User
+    const cols = await prisma.$queryRaw<{ column_name: string }[]>`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema='public' AND table_name IN ('User','user');
+    `;
+    const set = new Set(cols.map(c => c.column_name));
 
+    const select: any = { id: true };
+    if (set.has("name")) select.name = true;
+    if (set.has("birthdate")) select.birthdate = true;
+    if (set.has("gender")) select.gender = true;
+    if (set.has("avatarUrl")) select.avatarUrl = true;
 
+    // Ambil 20 user selain saya
+    const list = await prisma.user.findMany({
+      where: me ? { id: { not: me as any } } : undefined,
+      take: 20,
+      select,
+      orderBy: set.has("createdAt") ? { createdAt: "desc" as const } : undefined,
+    });
+
+    const profiles = list.map((u: any) => {
+      const name = u.name || (u.email ? String(u.email).split("@")[0] : "User");
+      const age = set.has("birthdate") ? calcAge(u.birthdate) : null;
+      const avatar =
+        (set.has("avatarUrl") && u.avatarUrl) ?
+          String(u.avatarUrl) :
+          `https://api.dicebear.com/8.x/thumbs/svg?seed=${encodeURIComponent(name)}`;
+      return { id: String(u.id), name, age, avatarUrl: avatar };
+    });
+
+    return NextResponse.json({ ok: true, profiles }, { status: 200 });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message ?? "feed_failed", profiles: [] }, { status: 200 });
+  }
+}

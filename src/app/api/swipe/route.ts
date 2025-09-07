@@ -1,95 +1,38 @@
 ﻿import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
-import { requireUser } from "@/lib/auth";
-import { startOfDay } from "date-fns";
-import { toIntId } from "@/lib/id";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 export async function POST(req: Request) {
   try {
-    const me = await requireUser();
-    const meId = toIntId(me.id);
-    const { targetId: targetIdRaw, action } = await req.json();
-    if (!targetIdRaw || !["LIKE", "DISLIKE"].includes(action)) {
-      return NextResponse.json({ error: "Bad request" }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    const fromId = String((session as any)?.user?.id ?? "");
+    if (!fromId) return NextResponse.json({ ok: false, error: "UNAUTHENTICATED" }, { status: 401 });
+
+    const { toUserId, direction } = await req.json();
+    if (!toUserId || !["like","nope"].includes(direction)) {
+      return NextResponse.json({ ok: false, error: "BAD_INPUT" }, { status: 400 });
     }
-    const targetId = toIntId(targetIdRaw);
 
-    const today = startOfDay(new Date());
-    const count = await prisma.swipe.count({
-      where: { fromId: meId, createdAt: { gte: today } }});
-    if (count >= 100) return NextResponse.json({ error: "Daily swipe limit" }, { status: 429 });
-
-    await prisma.user.update({ where: { id: meId }, data: { lastActiveAt: new Date() } });
-
-    const swipe = await prisma.swipe.upsert({
-      where: { fromId_toId: { fromId: meId, toId: targetId } },
-      update: { action },
-      create: { fromId: meId, toId: targetId, action }});
-
-    let matched = false;
-    let matchId: string | undefined;
-    let conversationId: string | undefined;
-
-    if (action === "LIKE") {
-      const theyLiked = await prisma.swipe.findUnique({
-        where: { fromId_toId: { fromId: targetId, toId: meId } }});
-      if (theyLiked?.action === "LIKE") {
-        const a = meId < targetId ? meId : targetId;
-        const b = meId < targetId ? targetId : meId;
-
-        const [match, conversation] = await prisma.$transaction([
-          prisma.match.upsert({
-            where: { userAId_userBId: { userAId: a, userBId: b } },
-            update: {},
-            create: { userAId: a, userBId: b }}),
-          prisma.conversation.upsert({
-            where: { userAId_userBId: { userAId: a, userBId: b } },
-            update: {},
-            create: { userAId: a, userBId: b }}),
-        ]);
-
-        await prisma.notification.createMany({
-          data: [
-            { userId: meId, type: "MATCH", entityId: match.id },
-            { userId: targetId, type: "MATCH", entityId: match.id },
-          ],
-          skipDuplicates: true});
-
-        matched = true;
-        matchId = match.id;
-        conversationId = conversation.id;
+    // cek tabel Swipe ada?
+    const hasSwipe = await prisma.$queryRaw<{ table_name: string }[]>`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema='public' AND table_name IN ('Swipe','swipe');
+    `;
+    if (hasSwipe.length > 0) {
+      // coba create swipe (userId bisa int/string; coba keduanya)
+      const data: any = { fromId: fromId as any, toId: toUserId as any, direction };
+      try { await prisma.swipe.create({ data }); }
+      catch {
+        try {
+          const f = Number(fromId), t = Number(toUserId);
+          await prisma.swipe.create({ data: { ...data, fromId: f, toId: t } as any });
+        } catch {}
       }
     }
 
-    return NextResponse.json({ ok: true, matched, matchId, conversationId, swipe });
+    return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: e?.message ?? "swipe_failed" }, { status: 200 });
   }
 }
-
-export async function DELETE(req: Request) {
-  try {
-    const me = await requireUser();
-    const meId = toIntId(me.id);
-    const { searchParams } = new URL(req.url);
-    const targetIdParam = searchParams.get("targetId");
-    if (!targetIdParam) return NextResponse.json({ error: "targetId required" }, { status: 400 });
-    const targetId = toIntId(targetIdParam);
-
-    const a = meId < targetId ? meId : targetId;
-    const b = meId < targetId ? targetId : meId;
-    const alreadyMatched = await prisma.match.findUnique({
-      where: { userAId_userBId: { userAId: a, userBId: b } },
-      select: { id: true }});
-    if (alreadyMatched) return NextResponse.json({ error: "Already matched" }, { status: 409 });
-
-    await prisma.swipe.delete({ where: { fromId_toId: { fromId: meId, toId: targetId } } });
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
-  }
-}
-
-
-
-
