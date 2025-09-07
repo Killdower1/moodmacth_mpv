@@ -1,19 +1,23 @@
 import Image from "next/image";
 
 export type Profile = {
-  id: string;
-  name: string;
-  age: number;
-  gender?: string;
-  photos: string[];
+  id: string; name: string; age: number;
+  gender?: string; photos: string[];
 };
 
-export default function ProfileCard({ profile }: { profile: Profile }) {
+type Props = {
+  profile: Profile;
+  onLike?: () => void;
+  onDislike?: () => void;
+};
+
+export default function ProfileCard({ profile, onLike, onDislike }: Props) {
   const photo = profile.photos?.[0] ?? "/placeholder.jpg";
 
   return (
-    <div className="grid grid-rows-[1fr_auto] w-full h-full rounded-2xl overflow-hidden bg-neutral-900/40 border border-white/10 shadow-2xl">
-      <div className="relative">
+    <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-sm p-3">
+      {/* Foto */}
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl">
         <Image
           src={photo}
           alt={profile.name}
@@ -22,15 +26,35 @@ export default function ProfileCard({ profile }: { profile: Profile }) {
           className="object-cover"
           priority
         />
-        <div className="absolute left-3 top-3 text-white/70 text-xs pointer-events-none z-20">© 2025 Moodmacth</div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent" />
       </div>
 
-      <div className="p-4">
-        <h3 className="text-xl font-semibold">
-          {profile.name}, <span className="text-white/60">{profile.age}</span>
-        </h3>
-        {profile.gender && <p className="text-white/60 text-sm">{profile.gender}</p>}
+      {/* Info + Actions */}
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-xl font-semibold truncate">
+            {profile.name}, <span className="text-white/60">{profile.age}</span>
+          </h3>
+          {profile.gender && (
+            <p className="text-white/60 text-sm truncate">{profile.gender}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            aria-label="Dislike"
+            onClick={onDislike}
+            className="h-11 w-11 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 active:scale-95 transition"
+          >
+            ✕
+          </button>
+          <button
+            aria-label="Love"
+            onClick={onLike}
+            className="h-11 w-11 rounded-full border border-white/15 bg-white text-black hover:opacity-90 active:scale-95 transition"
+          >
+            ♥
+          </button>
+        </div>
       </div>
     </div>
   );

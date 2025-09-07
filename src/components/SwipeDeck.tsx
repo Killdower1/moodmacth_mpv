@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence, useAnimationControls } from "framer-motion";
 import ProfileCard, { type Profile } from "./ProfileCard";
 
@@ -7,30 +7,13 @@ export default function SwipeDeck({ profiles }: { profiles: Profile[] }) {
   const [idx, setIdx] = useState(0);
   const visible = useMemo(() => profiles.slice(idx, idx + 3), [profiles, idx]);
 
-  // KUNCI: tinggi deck tetap (≈78vh); kartu akan mengisi deck ini
   return (
-    <div className="relative h-[78vh] w-full overflow-hidden">
-      <Controls setIdx={setIdx} count={profiles.length} />
-      <Stack visible={visible} onAdvance={() => setIdx((i) => Math.min(i + 1, profiles.length))} />
-    </div>
-  );
-}
-
-function Controls({ setIdx, count }: { setIdx: any; count: number }) {
-  return (
-    <div className="absolute z-[60] bottom-4 left-0 right-0 flex justify-center gap-4">
-      <button
-        onClick={() => setIdx((i: number) => Math.min(i + 1, count))}
-        className="px-4 py-2 rounded-full bg-white/10 border border-white/20"
-      >
-        Skip
-      </button>
-      <button
-        onClick={() => setIdx((i: number) => Math.min(i + 1, count))}
-        className="px-4 py-2 rounded-full bg-white text-black"
-      >
-        Like
-      </button>
+    // Tinggi area deck cukup lega agar ada margin; kartu akan di-center
+    <div className="relative h-[86vh] w-full">
+      <Stack
+        visible={visible}
+        onAdvance={() => setIdx(i => Math.min(i + 1, profiles.length))}
+      />
     </div>
   );
 }
@@ -53,7 +36,7 @@ function Stack({ visible, onAdvance }: { visible: Profile[]; onAdvance: () => vo
     onAdvance();
   }
 
-  function onDragEnd(_: any, info: { offset: { x: number }; velocity: { x: number } }) {
+  function onDragEnd(_: any, info: { offset: { x: number }, velocity: { x: number } }) {
     const power = Math.abs(info.offset.x) + Math.abs(info.velocity.x) * 0.2;
     if (power > SWIPE_POWER || Math.abs(info.offset.x) > SWIPE_OFFSET) {
       forceSwipe(info.offset.x > 0 ? 1 : -1);
@@ -65,40 +48,59 @@ function Stack({ visible, onAdvance }: { visible: Profile[]; onAdvance: () => vo
   return (
     <div className="absolute inset-0">
       {visible
-        .map((p, i) => ({ p, i })) // i: 0=top
-        .reverse() // render from back to front
+        .map((p, i) => ({ p, i }))    // i: 0=top
+        .reverse()
         .map(({ p, i }) => {
           const depth = i;
           const isTop = depth === 0;
           const translateY = depth * 10;
           const scale = 1 - depth * 0.03;
 
-          const baseStyle: CSSProperties = {
+          const baseStyle: React.CSSProperties = {
             zIndex: 50 - depth,
-            transform: `translateY(${translateY}px) scale(${scale})`,
             pointerEvents: isTop ? "auto" : "none",
           };
 
+          // Wrapper grid untuk center kartu, memberi margin natural di sekeliling
+          const Center = ({ children }: { children: React.ReactNode }) => (
+            <div
+              className="absolute inset-0 grid place-items-center px-4"
+              style={{
+                ...baseStyle,
+                transform: `translateY(${translateY}px) scale(${scale})`,
+              }}
+            >
+              <div className="w-full max-w-sm">{children}</div>
+            </div>
+          );
+
           return isTop ? (
             <AnimatePresence key={p.id} mode="popLayout">
-              <motion.div
-                className="absolute inset-0"
-                style={{ ...baseStyle, x, rotate }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={onDragEnd}
-                animate={controls}
-                initial={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <ProfileCard profile={p} />
-              </motion.div>
+              <Center>
+                <motion.div
+                  style={{ x, rotate }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={onDragEnd}
+                  animate={controls}
+                  initial={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <ProfileCard
+                    profile={p}
+                    onLike={() => forceSwipe(1)}
+                    onDislike={() => forceSwipe(-1)}
+                  />
+                </motion.div>
+              </Center>
             </AnimatePresence>
           ) : (
-            <motion.div key={p.id} className="absolute inset-0" style={baseStyle} layout>
-              <ProfileCard profile={p} />
-            </motion.div>
+            <Center key={p.id}>
+              <motion.div layout>
+                <ProfileCard profile={p} />
+              </motion.div>
+            </Center>
           );
         })}
     </div>
