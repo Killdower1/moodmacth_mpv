@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import SwipeDeck from "@/components/SwipeDeck";
+import { toIntId } from "@/lib/id";
 
 export default async function FeedPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
-  const me = await prisma.user.findUnique({ where: { id: session.user.id as string }, select: { currentMood: true } });
+  const me = await prisma.user.findUnique({ where: { id: toIntId(session.user.id) }, select: { currentMood: true } });
   if (!me?.currentMood) redirect("/mood");
 
   return (

@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { toIntId } from "@/lib/id";
 
 export async function POST(req: Request) {
   try {
     const me = await requireUser();
-    const { targetId } = await req.json();
-    if (!targetId) return NextResponse.json({ error: "targetId required" }, { status: 400 });
+    const meId = toIntId(me.id);
+    const { targetId: targetIdRaw } = await req.json();
+    if (!targetIdRaw) return NextResponse.json({ error: "targetId required" }, { status: 400 });
+    const targetId = toIntId(targetIdRaw);
     await prisma.block.upsert({
-      where: { byId_targetId: { byId: me.id, targetId } },
+      where: { byId_targetId: { byId: meId, targetId } },
       update: {},
-      create: { byId: me.id, targetId },
+      create: { byId: meId, targetId },
     });
     return NextResponse.json({ ok: true });
   } catch (e: any) {

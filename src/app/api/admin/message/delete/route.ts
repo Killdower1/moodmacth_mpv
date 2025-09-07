@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminEmails } from "@/lib/admin";
+import { toIntId } from "@/lib/id";
 
 export async function POST(req: Request) {
   try {
     await requireAdminEmails();
     const fd = await req.formData();
-    const messageId = String(fd.get("messageId") || "");
-    if (!messageId) return NextResponse.json({ error: "Missing messageId" }, { status: 400 });
+    const raw = fd.get("messageId");
+    if (!raw) return NextResponse.json({ error: "Missing messageId" }, { status: 400 });
+    const messageId = toIntId(raw);
 
     await prisma.message.delete({ where: { id: messageId } });
 

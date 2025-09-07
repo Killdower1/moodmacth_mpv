@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { toIntId } from "@/lib/id";
 
 export async function GET() {
   try {
     const me = await requireUser();
+    const meId = toIntId(me.id);
     const items = await prisma.notification.findMany({
-      where: { userId: me.id },
+      where: { userId: meId },
       orderBy: { createdAt: "desc" },
       take: 20,
     });
