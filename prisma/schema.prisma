@@ -7,123 +7,94 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum SwipeAction {
+  LIKE
+  DISLIKE
+}
+
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  username   String?  @unique
+  id           String   @id @default(cuid())
+  email        String   @unique
   passwordHash String
-  name       String?
-  bio        String?
-  gender     String?
-  birthdate  DateTime?
-  avatarUrl  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  profile    Profile?
-  reputation Reputation?
-  moodSessions MoodSession[]
+  name         String
+  gender       String?   // "male" | "female" | "other"
+  age          Int?
+  photos       Photo[]
+  preferences  Preference?
+  swipesMade   Swipe[]   @relation("swipes_made")
+  swipesRecv   Swipe[]   @relation("swipes_recv")
+  matchesA     Match[]   @relation("matches_a")
+  matchesB     Match[]   @relation("matches_b")
+  blocked      Block[]   @relation("blocks_made")
+  blockedBy    Block[]   @relation("blocks_recv")
+  reportsMade  Report[]  @relation("reports_made")
+  reportsRecv  Report[]  @relation("reports_recv")
+  lastActiveAt DateTime? @db.Timestamp(6)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
-model Profile {
-  userId    Int      @id
-  user      User     @relation(fields: [userId], references: [id])
-  bio       String?
-  photos    String[]
-  lat       Float?
-  lon       Float?
-  interests String[]
-}
-
-model MoodSession {
-  id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     Int
-  mood       String
-  intent     String
-  boundaries Json
-  startedAt  DateTime @default(now())
-  expiresAt  DateTime
-  active     Boolean  @default(true)
-
-  @@index([mood, active])
-  @@index([userId, active])
-}
-
-model Like {
+model Photo {
   id        String   @id @default(cuid())
-  fromUser  Int
-  toUser    Int
-  moodCtx   String
+  url       String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
+}
 
-  @@index([toUser])
-  @@index([fromUser, toUser])
+model Preference {
+  id               String   @id @default(cuid())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String   @unique
+  preferredGenders String[] @default([])
+  minAge           Int      @default(18)
+  maxAge           Int      @default(60)
+  distanceKm       Int?
+  updatedAt        DateTime @updatedAt
+}
+
+model Swipe {
+  id        String      @id @default(cuid())
+  from      User        @relation("swipes_made", fields: [fromId], references: [id], onDelete: Cascade)
+  fromId    String
+  to        User        @relation("swipes_recv", fields: [toId], references: [id], onDelete: Cascade)
+  toId      String
+  action    SwipeAction
+  createdAt DateTime    @default(now())
+
+  @@unique([fromId, toId])
 }
 
 model Match {
-  id           String   @id @default(cuid())
-  userA        Int
-  userB        Int
-  adultCtx     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  lastActiveAt DateTime @default(now())
-
-  @@index([userA])
-  @@index([userB])
-}
-
-model Hidden {
-  id     Int @id @default(autoincrement())
-  userId Int
-  hideId Int
-
-  @@unique([userId, hideId])
-}
-
-model Message {
   id        String   @id @default(cuid())
-  matchId   String
-  fromUser  Int
-  type      String
-  content   String
+  userA     User     @relation("matches_a", fields: [userAId], references: [id], onDelete: Cascade)
+  userAId   String
+  userB     User     @relation("matches_b", fields: [userBId], references: [id], onDelete: Cascade)
+  userBId   String
   createdAt DateTime @default(now())
 
-  @@index([matchId, createdAt])
-}
-
-model Report {
-  id        String   @id @default(cuid())
-  reporter  Int
-  target    Int
-  reason    String
-  details   String?
-  createdAt DateTime @default(now())
+  @@unique([userAId, userBId])
 }
 
 model Block {
   id        String   @id @default(cuid())
-  blocker   Int
-  target    Int
+  by        User     @relation("blocks_made", fields: [byId], references: [id], onDelete: Cascade)
+  byId      String
+  target    User     @relation("blocks_recv", fields: [targetId], references: [id], onDelete: Cascade)
+  targetId  String
   createdAt DateTime @default(now())
+
+  @@unique([byId, targetId])
 }
 
-model Reputation {
-  userId       Int    @id
-  user         User   @relation(fields: [userId], references: [id])
-  reportCount  Int    @default(0)
-  blockCount   Int    @default(0)
-  qualityScore Int    @default(0)
-}
-
-model ReportDetail {
-  id           String   @id @default(cuid())
-  fromUserId   Int
-  targetUserId Int?
-  messageId    String?
-  reason       String
-  createdAt    DateTime @default(now())
-
-  @@index([targetUserId])
-  @@index([messageId])
+model Report {
+  id        String   @id @default(cuid())
+  by        User     @relation("reports_made", fields: [byId], references: [id], onDelete: Cascade)
+  byId      String
+  target    User     @relation("reports_recv", fields: [targetId], references: [id], onDelete: Cascade)
+  targetId  String
+  reason    String?
+  createdAt DateTime @default(now())
 }
 
