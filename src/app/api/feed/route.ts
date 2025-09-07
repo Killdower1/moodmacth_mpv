@@ -4,17 +4,16 @@ import { requireUser } from "@/lib/auth";
 import { normalizeProfile } from "@/lib/normalizeProfiles";
 import { Mood } from "@prisma/client";
 import { toIntId } from "@/lib/id";
+import { getCurrentMood } from "@/lib/mood";
 
 export async function GET(req: Request) {
   try {
     const meUser = await requireUser();
     const meId = toIntId(meUser.id);
-    const me = await prisma.user.findUnique({ where: { id: meId }, select: { id: true, currentMood: true } });
-    if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { searchParams } = new URL(req.url);
-    const moodParam = searchParams.get("mood") as Mood | null;
-    const mood = moodParam ?? me.currentMood ?? null;
+    const url = new URL(req.url);
+    const qMood = url.searchParams.get("mood") as Mood | null;
+    const mood = qMood ?? await getCurrentMood(meId);
 
     const pref = await prisma.preference.findUnique({ where: { userId: meId } });
 
@@ -36,9 +35,9 @@ export async function GET(req: Request) {
     const candidate = await prisma.user.findFirst({
       where: {
         id: { notIn: Array.from(excludeIds) },
-        ...(pref?.preferredGenders?.length ? { gender: { in: pref!.preferredGenders } } : {}),
+        ...(pref?.preferredGenders?.length ? { gender: { in: pref.preferredGenders } } : {}),
         ...(pref ? { age: { gte: pref.minAge, lte: pref.maxAge } } : {}),
-        ...(mood ? { currentMood: mood } : {}),
+        // mood filtering skipped for now
       },
       orderBy: [{ lastActiveAt: "desc" }, { createdAt: "desc" }],
       include: { photos: true },
