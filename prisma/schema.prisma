@@ -147,5 +147,7 @@ model MoodSession {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   mood      Mood
+
   createdAt DateTime @default(now())
+
 }

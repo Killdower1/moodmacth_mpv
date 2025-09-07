@@ -11,8 +11,10 @@ export async function POST(req: Request) {
     if (!mood || !(Object.values(Mood) as string[]).includes(mood)) {
       return NextResponse.json({ error: "mood required" }, { status: 400 });
     }
+
     await prisma.moodSession.create({
       data: { userId: toIntId(me.id), mood, createdAt: new Date() },
+
     });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
