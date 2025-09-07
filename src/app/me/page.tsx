@@ -1,4 +1,4 @@
-import { prisma } from "@/server/prisma";
+﻿import { prisma } from "@/server/prisma";
 import { requireSession } from "@/lib/session";
 
 export default async function MePage(){
@@ -11,3 +11,4 @@ export default async function MePage(){
     </div>
   )
 }
+

@@ -33,3 +33,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message ?? "register_failed" }, { status: 500 });
   }
 }
+

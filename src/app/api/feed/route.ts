@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
 import { requireUser } from "@/lib/auth";
 import { calcAge } from "@/lib/age";
@@ -64,3 +64,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }
 }
+

@@ -1,4 +1,4 @@
-import { prisma } from "@/server/prisma";
+﻿import { prisma } from "@/server/prisma";
 import { requireAdminEmails } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export default async function AdminPage() {
   })).map(u => [u.id, u]));
 
   const ulabel = (id?: number|null) => {
-    if(!id) return "—";
+    if(!id) return "â€”";
     const u = mapUsers.get(id);
     return u ? (u.name || u.email) : `(unknown:${String(id).slice(0,6)})`;
   };
@@ -36,7 +36,7 @@ export default async function AdminPage() {
     <div className="grid" style={{gridTemplateColumns:"1fr"}}>
       {/* USERS */}
       <div className="card">
-        <h2>Admin — Users</h2>
+        <h2>Admin â€” Users</h2>
         <p>Total (showing latest 50).</p>
         <div className="grid" style={{gridTemplateColumns:"1fr 1fr 1fr 1fr"}}>
           {users.map(u => (
@@ -61,7 +61,7 @@ export default async function AdminPage() {
 
       {/* MATCHES */}
       <div className="card">
-        <h2>Admin — Matches</h2>
+        <h2>Admin â€” Matches</h2>
         <div className="grid" style={{gridTemplateColumns:"1fr 1fr 1fr"}}>
           {matches.map((m:any) => (
             <div key={m.id} className="card">
@@ -81,7 +81,7 @@ export default async function AdminPage() {
 
       {/* MESSAGES */}
       <div className="card">
-        <h2>Admin — Recent Messages</h2>
+        <h2>Admin â€” Recent Messages</h2>
         <div className="grid" style={{gridTemplateColumns:"1fr 1fr 1fr"}}>
           {messages.map((ms:any) => (
             <div key={ms.id} className="card">
@@ -101,7 +101,7 @@ export default async function AdminPage() {
 
       {/* REPORTS */}
       <div className="card">
-        <h2>Admin — Reports</h2>
+        <h2>Admin â€” Reports</h2>
         <div className="grid" style={{gridTemplateColumns:"1fr 1fr 1fr"}}>
           {reports.map((r:any) => (
             <div key={r.id} className="card">
@@ -123,3 +123,4 @@ export default async function AdminPage() {
     </div>
   );
 }
+

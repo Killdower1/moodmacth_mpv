@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { prisma } from "@/server/prisma";
 import bcrypt from 'bcryptjs';
 import { faker } from '@faker-js/faker';
 
-const prisma = new PrismaClient();
+const prisma = prisma;
 const PASSWORD = 'Password123!';
 
 async function main() {
@@ -45,7 +45,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Seed complete. Example login: user1@example.com / Password123!');
+  console.log('âœ… Seed complete. Example login: user1@example.com / Password123!');
 }
 
 main()
@@ -56,3 +56,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+
