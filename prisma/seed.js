@@ -27,7 +27,8 @@ async function main() {
           },
         },
         lastActiveAt: new Date(),
-        moodSessions: { create: { mood, startedAt: new Date(), active: true } },
+
+        moodSessions: { create: { mood, createdAt: new Date() } },
       },
     });
   }
