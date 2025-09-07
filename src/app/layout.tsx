@@ -1,16 +1,17 @@
+// src/app/layout.tsx
 import "./globals.css";
-import Link from "next/link";
-import { ReactNode } from "react";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { Nunito } from "next/font/google";
 import Link from "next/link";
+import type { ReactNode } from "react";
+
+export const metadata = {
+    title: "Moodmatch",
+    description: "Find your vibe",
+};
 
 const nunito = Nunito({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
-export const metadata = { title: "Moodmatch", description: "Find your vibe" };
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
     return (
         <html lang="en">
             <body className={`${nunito.className} bg-[#0b0f14] text-white min-h-screen`}>
