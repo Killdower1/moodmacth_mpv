@@ -1,145 +1,65 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    username: "",
-    name: "",
-    gender: "",
-    birthdate: "",
-    avatarUrl: "",
-    bio: "",
-  });
+  const [gender, setGender] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [photo, setPhoto] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetch("/api/me")
-      .then((res) => res.text())
-      .then((text) => {
-        if (!text) return;
-        const user = JSON.parse(text);
-        if (user.name && user.gender && user.birthdate) {
-          router.replace("/feed");
-        }
-      })
-      .catch(() => {});
-  }, [router]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
     const res = await fetch("/api/onboarding", {
-      method: "POST",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ gender, birthYear: Number(birthYear), photo }),
     });
-    if (res.ok) {
-      router.replace("/");
-      } else {
-        let data: any = {};
-        try { data = await res.json(); } catch {}
-        setError(data?.error || "Failed to update profile");
-        setLoading(false);
-      }
-  };
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data?.error || "Failed");
+      setLoading(false);
+      return;
+    }
+    router.push("/mood");
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <form
-        className="w-full max-w-md bg-white rounded-lg shadow p-6 space-y-6"
-        onSubmit={handleSubmit}
-      >
-        <h2 className="text-2xl font-bold text-center mb-4">
-          Complete Your Profile
-        </h2>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4">
+        <h1 className="text-2xl font-bold text-center">Onboarding</h1>
         {error && <div className="text-red-500 text-sm">{error}</div>}
-        <div>
-          <label className="block text-sm font-medium mb-1">Username</label>
-          <input
-            type="text"
-            name="username"
-            required
-            value={form.username}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-            placeholder="username"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Name</label>
-          <input
-            type="text"
-            name="name"
-            required
-            value={form.name}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-            placeholder="Your name"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Gender</label>
-          <select
-            name="gender"
-            required
-            value={form.gender}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-          >
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Birthdate</label>
-          <input
-            type="date"
-            name="birthdate"
-            required
-            value={form.birthdate}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Avatar URL (optional)</label>
-          <input
-            type="url"
-            name="avatarUrl"
-            value={form.avatarUrl}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-            placeholder="https://..."
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Bio (optional)</label>
-          <textarea
-            name="bio"
-            value={form.bio}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-            placeholder="Tell us about yourself"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition"
+        <select
+          className="w-full border rounded-lg p-3"
+          value={gender}
+          onChange={(e) => setGender(e.target.value)}
+          required
         >
+          <option value="">Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+        <input
+          type="number"
+          className="w-full border rounded-lg p-3"
+          placeholder="Birth year"
+          value={birthYear}
+          onChange={(e) => setBirthYear(e.target.value)}
+          required
+        />
+        <input
+          className="w-full border rounded-lg p-3"
+          placeholder="Photo URL"
+          value={photo}
+          onChange={(e) => setPhoto(e.target.value)}
+          required
+        />
+        <button disabled={loading} className="w-full rounded-lg p-3 bg-black text-white disabled:opacity-50">
           {loading ? "Saving..." : "Continue"}
         </button>
       </form>

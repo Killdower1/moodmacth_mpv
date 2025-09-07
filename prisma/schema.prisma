@@ -12,6 +12,13 @@ enum SwipeAction {
   DISLIKE
 }
 
+enum Mood {
+  NORMAL
+  SERIOUS
+  FUN
+  HOT
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -21,6 +28,7 @@ model User {
   age          Int?
   photos       Photo[]
   preferences  Preference?
+  currentMood  Mood?
   swipesMade   Swipe[]   @relation("swipes_made")
   swipesRecv   Swipe[]   @relation("swipes_recv")
   matchesA     Match[]   @relation("matches_a")
@@ -29,6 +37,9 @@ model User {
   blockedBy    Block[]   @relation("blocks_recv")
   reportsMade  Report[]  @relation("reports_made")
   reportsRecv  Report[]  @relation("reports_recv")
+  conversationsA Conversation[] @relation("conv_a")
+  conversationsB Conversation[] @relation("conv_b")
+  messages       Message[]
   lastActiveAt DateTime? @db.Timestamp(6)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -106,4 +117,26 @@ model Notification {
   type      String
   entityId  String?
   createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id        String @id @default(cuid())
+  userA     User   @relation("conv_a", fields: [userAId], references: [id], onDelete: Cascade)
+  userAId   String
+  userB     User   @relation("conv_b", fields: [userBId], references: [id], onDelete: Cascade)
+  userBId   String
+  createdAt DateTime @default(now())
+  messages  Message[]
+
+  @@unique([userAId, userBId])
+}
+
+model Message {
+  id            String       @id @default(cuid())
+  conversation  Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  sender        User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId      String
+  text          String
+  createdAt     DateTime     @default(now())
 }

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useAnimationControls, useMotionValue, useTransform } from "framer-motion";
 import ProfileCard, { type Profile } from "./ProfileCard";
 
-export default function SwipeDeck() {
+export default function SwipeDeck({ mood }: { mood?: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [busy, setBusy] = useState(false);
   const lastStack = useRef<string[]>([]);
@@ -14,7 +14,8 @@ export default function SwipeDeck() {
 
   async function loadNext() {
     setBusy(true);
-    const res = await fetch("/api/feed", { cache: "no-store" }).then(r => r.json());
+    const url = mood ? `/api/feed?mood=${encodeURIComponent(mood)}` : "/api/feed";
+    const res = await fetch(url, { cache: "no-store" }).then(r => r.json());
     setProfile(res.profile);
     setBusy(false);
   }
@@ -35,11 +36,16 @@ export default function SwipeDeck() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ targetId: profile.id, action }),
-    }).then(r => r.json()).then(data => {
-      if (data?.matched) {
-        console.log("It's a match!", data.matchId);
-      }
-    }).catch(() => {});
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data?.matched && data.conversationId) {
+          if (window.confirm("It's a match! Say hi?")) {
+            window.location.href = `/chat/${data.conversationId}`;
+          }
+        }
+      })
+      .catch(() => {});
 
     await loadNext();
   }

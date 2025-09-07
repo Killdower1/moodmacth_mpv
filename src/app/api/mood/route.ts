@@ -1,23 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { Mood } from "@prisma/client";
 
 export async function PATCH(req: Request) {
   try {
     const me = await requireUser();
-    const { gender, birthYear, photo } = await req.json();
-    const age = birthYear ? new Date().getFullYear() - Number(birthYear) : undefined;
+    const { mood } = await req.json();
+    if (!mood || !(Object.values(Mood) as string[]).includes(mood)) {
+      return NextResponse.json({ error: "Bad mood" }, { status: 400 });
+    }
     await prisma.user.update({
       where: { id: me.id },
-      data: {
-        gender: gender || undefined,
-        age,
-        photos: photo
-          ? {
-              create: { url: photo, isPrimary: true },
-            }
-          : undefined,
-      },
+      data: { currentMood: mood as Mood },
     });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
