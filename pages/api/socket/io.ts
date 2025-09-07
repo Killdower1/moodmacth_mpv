@@ -1,4 +1,4 @@
-
+﻿
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { Server as HTTPServer } from "http";
 import { Server as IOServer } from "socket.io";
@@ -19,3 +19,4 @@ export default function handler(req:NextApiRequest,res:NextApiResponse){
   res.end();
 }
 export const config = { api: { bodyParser: false } };
+

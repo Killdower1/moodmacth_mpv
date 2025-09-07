@@ -17,8 +17,7 @@ export default function OnboardingPage() {
     const res = await fetch("/api/onboarding", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gender, birthYear: Number(birthYear), photo }),
-    });
+      body: JSON.stringify({ gender, birthYear: Number(birthYear), photo })});
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data?.error || "Failed");
@@ -66,4 +65,6 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
+
 

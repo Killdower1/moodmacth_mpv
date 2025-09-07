@@ -21,3 +21,5 @@ export default function ProfileCard({ profile, onLike, onDislike }:{ profile: Pr
   );
 }
 
+
+

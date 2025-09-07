@@ -7,14 +7,14 @@ export async function getCurrentMood(userId: string | number) {
   const active = await prisma.moodSession.findFirst({
     where: { userId: id, active: true },
     orderBy: { startedAt: "desc" },
-    select: { mood: true },
-  });
+    select: { mood: true }});
   if (active) return active.mood;
   const last = await prisma.moodSession.findFirst({
     where: { userId: id },
     orderBy: { startedAt: "desc" },
-    select: { mood: true },
-  });
+    select: { mood: true }});
   return last?.mood ?? null;
 }
+
+
 

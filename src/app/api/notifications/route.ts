@@ -10,11 +10,12 @@ export async function GET() {
     const items = await prisma.notification.findMany({
       where: { userId: meId },
       orderBy: { createdAt: "desc" },
-      take: 20,
-    });
+      take: 20});
     return NextResponse.json({ items });
   } catch (e: any) {
     return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }
 }
+
+
 

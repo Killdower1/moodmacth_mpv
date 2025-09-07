@@ -12,7 +12,8 @@ export function normalizeProfile(p: any) {
     name: p.name ?? "User",
     age: calcAge(p.birthdate) ?? 21,
     gender: p.gender ?? "other",
-    photo,
-  };
+    photo};
 }
+
+
 

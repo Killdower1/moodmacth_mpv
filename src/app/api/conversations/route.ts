@@ -14,9 +14,7 @@ export async function GET(){
       include:{
         messages:{ orderBy:{ createdAt:"desc" }, take:1 },
         userA:{ select:{ id:true, name:true, gender:true, birthdate:true, photos:true } },
-        userB:{ select:{ id:true, name:true, gender:true, birthdate:true, photos:true } },
-      },
-    });
+        userB:{ select:{ id:true, name:true, gender:true, birthdate:true, photos:true } }}});
     const items = convs.map((c)=>{
       const peer = c.userAId===meId? c.userB : c.userA;
       const photo = (peer as any).photos?.find?.((p:any)=>p.isPrimary)?.url || (peer as any).photos?.[0]?.url || "https://cdn.jsdelivr.net/gh/faker-js/assets-person-portrait/male/512/1.jpg";
@@ -25,4 +23,6 @@ export async function GET(){
     });
   return new Response(JSON.stringify({ items }), { headers: { "Content-Type":"application/json" } });
 }
+
+
 

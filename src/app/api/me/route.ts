@@ -7,3 +7,5 @@ export async function GET(){
   return new Response(JSON.stringify({ id: s.user.id, name: s.user.name ?? null }), { headers: { "Content-Type":"application/json" } });
 }
 
+
+

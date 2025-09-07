@@ -38,3 +38,5 @@ export default function MoodBar({ isAdult }: { isAdult: boolean }) {
   );
 }
 
+
+

@@ -45,9 +45,7 @@ export async function GET(req: Request) {
         name: true,
         gender: true,
         birthdate: true,
-        photos: true,
-      },
-    });
+        photos: true}});
 
     if (!candidate) return NextResponse.json({ profile: null });
 
@@ -64,5 +62,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }
 }
+
+
 
 

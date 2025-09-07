@@ -6,3 +6,5 @@ export default function FeedPage(){
   return (<BumbleShell><SwipeDeck/></BumbleShell>);
 }
 
+
+

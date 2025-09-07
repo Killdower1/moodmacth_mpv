@@ -6,8 +6,7 @@ import { z } from 'zod';
 import { toIntId } from '@/lib/id';
 
 const LikeSchema = z.object({
-  toId: z.number(),
-});
+  toId: z.number()});
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -21,12 +20,10 @@ export async function POST(req: NextRequest) {
   if (toId === userId) return NextResponse.json({ error: 'Cannot like yourself' }, { status: 400 });
 
   await prisma.like.create({
-    data: { fromUser: userId, toUser: toId, moodCtx: '' },
-  }).catch(() => {});
+    data: { fromUser: userId, toUser: toId, moodCtx: '' }}).catch(() => {});
 
   const mutual = await prisma.like.findFirst({
-    where: { fromUser: toId, toUser: userId },
-  });
+    where: { fromUser: toId, toUser: userId }});
 
   let matched = false;
   if (mutual) {
@@ -37,4 +34,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, matched });
 }
+
+
 

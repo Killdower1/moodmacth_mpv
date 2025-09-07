@@ -13,11 +13,12 @@ export async function POST(req: Request) {
     await prisma.block.upsert({
       where: { byId_targetId: { byId: meId, targetId } },
       update: {},
-      create: { byId: meId, targetId },
-    });
+      create: { byId: meId, targetId }});
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }
 }
+
+
 

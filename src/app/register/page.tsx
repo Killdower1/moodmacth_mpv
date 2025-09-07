@@ -16,8 +16,7 @@ export default function RegisterPage() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+      body: JSON.stringify({ name, email, password })});
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data?.error || "Register failed");
@@ -28,8 +27,7 @@ export default function RegisterPage() {
       identifier: email,
       password,
       redirect: true,
-      callbackUrl: "/onboarding",
-    });
+      callbackUrl: "/onboarding"});
     setLoading(false);
   }
 
@@ -68,4 +66,6 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+
 

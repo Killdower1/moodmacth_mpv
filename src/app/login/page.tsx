@@ -18,8 +18,7 @@ export default function LoginPage() {
       identifier,
       password,
       redirect: false,
-      callbackUrl: "/feed",
-    });
+      callbackUrl: "/feed"});
     if (res?.error) {
       setError("Email atau password salah");
       setLoading(false);
@@ -57,4 +56,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
+
 

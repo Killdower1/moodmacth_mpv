@@ -5,8 +5,7 @@ import type { ReactNode } from "react";
 
 export const metadata = {
   title: "Moodmatch",
-  description: "Find your vibe",
-};
+  description: "Find your vibe"};
 
 const nunito = Nunito({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
@@ -31,4 +30,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </html>
   );
 }
+
+
 

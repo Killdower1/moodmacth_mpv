@@ -17,8 +17,7 @@ export async function POST(req: Request) {
         email,
         passwordHash: hash, // <- SIMPAN STRING, BUKAN Buffer
       },
-      select: { id: true, email: true },
-    });
+      select: { id: true, email: true }});
 
     return NextResponse.json({ ok: true, id: user.id }, { status: 201 });
   } catch (e: any) {
@@ -28,3 +27,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message ?? "register_failed" }, { status: 500 });
   }
 }
+
+

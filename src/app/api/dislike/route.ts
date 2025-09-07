@@ -6,8 +6,7 @@ import { z } from 'zod';
 import { toIntId } from '@/lib/id';
 
 const DislikeSchema = z.object({
-  toId: z.number(),
-});
+  toId: z.number()});
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -23,8 +22,9 @@ export async function POST(req: NextRequest) {
   await prisma.hidden.upsert({
     where: { userId_hideId: { userId, hideId: toId } },
     update: {},
-    create: { userId, hideId: toId },
-  });
+    create: { userId, hideId: toId }});
 
   return NextResponse.json({ ok: true });
 }
+
+

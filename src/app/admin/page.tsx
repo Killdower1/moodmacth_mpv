@@ -23,8 +23,7 @@ export default async function AdminPage() {
   const idList = Array.from(ids);
   const mapUsers = new Map((await prisma.user.findMany({
     where: { id: { in: idList } },
-    select: { id: true, email: true, name: true },
-  })).map(u => [u.id, u]));
+    select: { id: true, email: true, name: true }})).map(u => [u.id, u]));
 
   const ulabel = (id?: number|null) => {
     if(!id) return "â€”";
@@ -123,5 +122,7 @@ export default async function AdminPage() {
     </div>
   );
 }
+
+
 
 
