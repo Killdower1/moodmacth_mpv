@@ -1,3 +1,4 @@
+
 import Image from "next/image";
 
 export type Profile = { id: string; name: string; age: number; gender?: string; photo: string };

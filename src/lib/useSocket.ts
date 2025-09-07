@@ -1,17 +1,17 @@
+
 "use client";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 import { useEffect, useRef } from "react";
 
-export function useSocket(roomId: string) {
-  const socketRef = useRef<Socket | null>(null);
+export function useSocket(roomId: string | number) {
+  const ref = useRef<ReturnType<typeof io> | null>(null);
   useEffect(() => {
+    // Init the server side
     fetch("/api/socket/io");
     const s = io({ path: "/api/socket/io" });
-    socketRef.current = s;
-    s.emit("join", roomId);
-    return () => {
-      s.disconnect();
-    };
+    ref.current = s;
+    s.emit("join", String(roomId));
+    return () => { s.disconnect(); };
   }, [roomId]);
-  return socketRef;
+  return ref;
 }

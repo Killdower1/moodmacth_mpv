@@ -1,7 +1,6 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-export { authOptions };
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options"; // adjust if different
 
 export async function requireUser() {
   const session = await getServerSession(authOptions);

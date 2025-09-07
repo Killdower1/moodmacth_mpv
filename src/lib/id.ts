@@ -1,3 +1,4 @@
+
 export function toIntId(v: unknown): number {
   const n = typeof v === "string" ? Number(v) : (v as number);
   if (!Number.isInteger(n)) throw new Error("Invalid Int ID");

@@ -1,35 +1,39 @@
-import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+
 import Link from "next/link";
-import { toIntId } from "@/lib/id";
+
+function fmtDate(d: string | Date) {
+  const dt = new Date(d);
+  return dt.toLocaleString();
+}
 
 export default async function MatchPage() {
-  const me = await requireUser();
-  const meId = toIntId(me.id);
-  const convs = await prisma.conversation.findMany({
-    where: { OR: [{ userAId: meId }, { userBId: meId }] },
-    orderBy: { createdAt: "desc" },
-    include: {
-      userA: { select: { id: true, name: true, photos: { where: { isPrimary: true }, take: 1 } } },
-      userB: { select: { id: true, name: true, photos: { where: { isPrimary: true }, take: 1 } } },
-      messages: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
-  });
-  const items = convs.map(c => {
-    const peer = c.userAId === meId ? c.userB : c.userA;
-    const photo = peer.photos[0]?.url || "";
-    const lastMessage = c.messages[0]?.text || "";
-    return { id: c.id, peer: { id: peer.id, name: peer.name, photo }, lastMessage };
-  });
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/conversations`, { cache: "no-store" });
+  const { items } = await res.json();
+
   return (
-    <div className="p-4 space-y-4">
-      {items.map(i => (
-        <Link key={i.id} href={`/chat/${i.id}`} className="block border border-white/10 rounded p-4 bg-white/5">
-          <div className="font-semibold">{i.peer.name}</div>
-          {i.lastMessage && <div className="text-sm text-white/60 truncate">{i.lastMessage}</div>}
-        </Link>
-      ))}
-      {!items.length && <div>No matches yet</div>}
-    </div>
+    <main className="min-h-screen bg-[#0b0f14]">
+      <div className="max-w-2xl mx-auto px-4 pt-6 pb-10">
+        <h1 className="text-2xl font-semibold mb-4">Matches</h1>
+
+        <div className="space-y-3">
+          {items?.length ? items.map((c: any) => (
+            <Link key={c.id} href={`/chat/${c.id}`} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-3">
+              <div className="h-12 w-12 rounded-full overflow-hidden bg-white/10 shrink-0">
+                <img src={c.peer.photo} alt={c.peer.name} className="h-full w-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-medium truncate">{c.peer.name}</p>
+                  <span className="text-xs text-white/50">{fmtDate(c.lastAt)}</span>
+                </div>
+                <p className="text-sm text-white/70 truncate">{c.lastMessage || "Say hi 👋"}</p>
+              </div>
+            </Link>
+          )) : (
+            <p className="text-white/60">Belum ada match. Coba swipe dulu di Feed.</p>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
