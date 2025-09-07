@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminEmails } from "@/lib/admin";
+import { toIntId } from "@/lib/id";
 
 export async function POST(req: Request) {
   try {
     await requireAdminEmails();
     const fd = await req.formData();
-    const userId = Number(fd.get("userId"));
-    if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    const raw = fd.get("userId");
+    if (!raw) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    const userId = toIntId(raw);
 
     const placeholder = `https://picsum.photos/seed/${String(userId).slice(0,6)}/400/600`;
     await prisma.profile.upsert({

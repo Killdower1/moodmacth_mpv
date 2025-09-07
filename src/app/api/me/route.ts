@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { log } from "@/lib/logger";
+import { toIntId } from "@/lib/id";
 
 const EditableSchema = z.object({
   name: z.string().min(1).optional(),
@@ -20,8 +21,10 @@ export async function GET(req: NextRequest) {
     log("GET /api/me: Unauthorized");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = Number(session.user.id);
-  if (Number.isNaN(userId)) {
+  let userId: number;
+  try {
+    userId = toIntId(session.user.id);
+  } catch {
     log("GET /api/me: Bad user id", session.user.id);
     return NextResponse.json({ error: "Bad user id" }, { status: 400 });
   }
@@ -42,8 +45,10 @@ export async function PATCH(req: NextRequest) {
     log("PATCH /api/me: Unauthorized");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = Number(session.user.id);
-  if (Number.isNaN(userId)) {
+  let userId: number;
+  try {
+    userId = toIntId(session.user.id);
+  } catch {
     log("PATCH /api/me: Bad user id", session.user.id);
     return NextResponse.json({ error: "Bad user id" }, { status: 400 });
   }

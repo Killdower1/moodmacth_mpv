@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type { Server as HTTPServer } from "http";
 import { Server as IOServer } from "socket.io";
 import { prisma } from "@/lib/prisma";
+import { toIntId } from "@/lib/id";
 
 type SocketServer = HTTPServer & { io?: IOServer };
 
@@ -22,15 +23,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
       socket.on("message", async (payload: { conversationId: string; senderId: string; text: string }) => {
         try {
+          const conversationId = toIntId(payload.conversationId);
+          const senderId = toIntId(payload.senderId);
           const msg = await prisma.message.create({
             data: {
-              conversationId: payload.conversationId,
-              senderId: payload.senderId,
+              conversationId,
+              senderId,
               text: payload.text,
             },
             include: { sender: { select: { id: true, name: true } } },
           });
-          io.to(payload.conversationId).emit("message", msg);
+          io.to(String(conversationId)).emit("message", msg);
         } catch (e) {
           console.error("socket message error", e);
         }

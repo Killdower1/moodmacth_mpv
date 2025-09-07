@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { toIntId } from '@/lib/id';
 
 const LikeSchema = z.object({
   toId: z.number(),
@@ -12,12 +13,11 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const userId = Number(session.user.id);
+  const userId = toIntId(session.user.id);
   const body = await req.json();
   const parse = LikeSchema.safeParse(body);
   if (!parse.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
-
-  const { toId } = parse.data;
+  const toId = toIntId(parse.data.toId);
   if (toId === userId) return NextResponse.json({ error: 'Cannot like yourself' }, { status: 400 });
 
   await prisma.like.create({

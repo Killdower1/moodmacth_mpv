@@ -2,13 +2,14 @@
 import { useEffect, useState, useRef } from "react";
 import { useSocket } from "@/lib/useSocket";
 import { useSession } from "next-auth/react";
+import { toIntId } from "@/lib/id";
 
 export default function Page({ params }: { params: { id: string } }) {
-  const { id } = params;
+  const id = toIntId(params.id);
   const { data: session } = useSession();
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
-  const socketRef = useSocket(id);
+  const socketRef = useSocket(String(id));
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function Page({ params }: { params: { id: string } }) {
     setText("");
   }
 
-  const meId = session?.user?.id;
+  const meId = session?.user?.id ? toIntId(session.user.id) : undefined;
 
   return (
     <div className="flex flex-col h-screen">
