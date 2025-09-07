@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import TinderCard from "react-tinder-card";
 import Image from "next/image";
+import { safeImageProps } from "@/lib/imageSafe";
 
 type UserCard = {
   id: string;
@@ -97,7 +98,7 @@ export default function FeedClient() {
               <div className="w-32 h-32 mb-4 relative">
                 {card.image ? (
                   <Image
-                    src={card.image}
+                    {...safeImageProps(card.image)}
                     alt={card.name || "Avatar"}
                     fill
                     className="object-cover rounded-full"
