@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 import { requireAdminEmails } from "@/lib/admin";
 import { toIntId } from "@/lib/id";
 

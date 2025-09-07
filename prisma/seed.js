@@ -11,13 +11,14 @@ async function main() {
     const name = faker.person.fullName();
     const email = faker.internet.email({ firstName: name.split(" ")[0] }).toLowerCase();
     const mood = faker.helpers.arrayElement(["NORMAL","SERIOUS","FUN","HOT"]);
+    const birthdate = faker.date.birthdate({ min: 18, max: 40, mode: 'age' });
     await prisma.user.create({
       data: {
         email,
         passwordHash: "dev",
         name,
         gender: isMale ? "male" : "female",
-        age: faker.number.int({ min: 21, max: 45 }),
+        birthdate,
         photos: { create: [{ url: isMale ? male(i) : female(i), isPrimary: true }] },
         preferences: {
           create: {

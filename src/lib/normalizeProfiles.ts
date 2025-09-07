@@ -10,7 +10,7 @@ export function normalizeProfile(p: any) {
   return {
     id: String(p.id),
     name: p.name ?? "User",
-    age: calcAge(p.birthdate) ?? p.age ?? 21,
+    age: calcAge(p.birthdate) ?? 21,
     gender: p.gender ?? "other",
     photo,
   };
