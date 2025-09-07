@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 import { requireUser } from "@/lib/auth";
-import { normalizeProfile } from "@/lib/normalizeProfiles";
+import { calcAge } from "@/lib/age";
 import { Mood } from "@prisma/client";
 import { toIntId } from "@/lib/id";
 import { getCurrentMood } from "@/lib/mood";
@@ -36,17 +36,30 @@ export async function GET(req: Request) {
       where: {
         id: { notIn: Array.from(excludeIds) },
         ...(pref?.preferredGenders?.length ? { gender: { in: pref.preferredGenders } } : {}),
-        ...(pref ? { age: { gte: pref.minAge, lte: pref.maxAge } } : {}),
+        // TODO: filter by birthdate range
         // mood filtering skipped for now
       },
       orderBy: [{ lastActiveAt: "desc" }, { createdAt: "desc" }],
-      include: { photos: true },
+      select: {
+        id: true,
+        name: true,
+        gender: true,
+        birthdate: true,
+        photos: true,
+      },
     });
 
     if (!candidate) return NextResponse.json({ profile: null });
 
-    const profile = normalizeProfile(candidate);
-    return NextResponse.json({ profile });
+    const photo = candidate.photos?.find?.((p:any)=>p.isPrimary)?.url
+             ?? candidate.photos?.[0]?.url
+             ?? "https://cdn.jsdelivr.net/gh/faker-js/assets-person-portrait/male/512/1.jpg";
+
+    const age = calcAge(candidate.birthdate) ?? 21;
+
+    return NextResponse.json({
+      profile: { id: candidate.id, name: candidate.name, age, gender: candidate.gender ?? "other", photo }
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }

@@ -8,12 +8,12 @@ export async function PATCH(req: Request) {
     const me = await requireUser();
     const meId = toIntId(me.id);
     const { gender, birthYear, photo } = await req.json();
-    const age = birthYear ? new Date().getFullYear() - Number(birthYear) : undefined;
+    const birthdate = birthYear ? new Date(Number(birthYear), 0, 1) : undefined;
     await prisma.user.update({
       where: { id: meId },
       data: {
         gender: gender || undefined,
-        age,
+        birthdate,
         photos: photo
           ? {
               create: { url: photo, isPrimary: true },
