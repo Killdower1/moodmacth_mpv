@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 import { requireUser } from "@/lib/auth";
 import { toIntId } from "@/lib/id";
 
