@@ -16,7 +16,7 @@ export default function ProfileCard({ profile, onLike, onDislike }: Props) {
 
   return (
     <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-sm p-3">
-      {/* Foto */}
+      {/* Foto (centered, not full screen) */}
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl">
         <Image
           src={photo}
