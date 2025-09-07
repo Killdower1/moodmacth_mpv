@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+﻿import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 
 export async function requireSession() {
@@ -6,3 +6,4 @@ export async function requireSession() {
   if (!session?.user?.email) throw new Error('Unauthorized');
   return session;
 }
+

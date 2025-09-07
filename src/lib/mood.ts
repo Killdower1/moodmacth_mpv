@@ -1,4 +1,4 @@
-
+﻿
 import { prisma } from "@/server/prisma";
 import { toIntId } from "@/lib/id";
 
@@ -17,3 +17,4 @@ export async function getCurrentMood(userId: string | number) {
   });
   return last?.mood ?? null;
 }
+

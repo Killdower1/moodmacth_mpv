@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/server/prisma';
@@ -37,3 +37,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, matched });
 }
+

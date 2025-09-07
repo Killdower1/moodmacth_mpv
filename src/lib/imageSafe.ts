@@ -1,4 +1,4 @@
-const allowedHosts = new Set([
+﻿const allowedHosts = new Set([
   'cdn.jsdelivr.net',
   'images.unsplash.com',
   'lh3.googleusercontent.com',
@@ -19,4 +19,5 @@ export function isAllowedHost(url: string): boolean {
 export function safeImageProps(src: string) {
   return isAllowedHost(src) ? { src } : { src, unoptimized: true };
 }
+
 

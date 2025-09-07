@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
 import { requireUser } from "@/lib/auth";
 import { Mood } from "@prisma/client";
@@ -21,3 +21,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }
 }
+

@@ -1,4 +1,4 @@
-import type { Server as IOServer } from 'socket.io';
+﻿import type { Server as IOServer } from 'socket.io';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -8,3 +8,4 @@ declare global {
 export function getIO(): IOServer | undefined {
   return global._moodmacth_io;
 }
+

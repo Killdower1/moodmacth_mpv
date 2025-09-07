@@ -1,4 +1,4 @@
-
+﻿
 "use client";
 import { useEffect, useState } from "react";
 import { motion, useAnimationControls, useMotionValue, useTransform } from "framer-motion";
@@ -36,3 +36,4 @@ export default function SwipeDeck(){
     </div>
   );
 }
+

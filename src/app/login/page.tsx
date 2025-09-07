@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -45,7 +45,7 @@ export default function LoginPage() {
         <input
           name="password"
           className="w-full border rounded-lg p-3"
-          placeholder="••••••••"
+          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -57,3 +57,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

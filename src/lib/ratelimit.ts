@@ -1,4 +1,4 @@
-// Simple in-memory rate limiter (per-process). Cocok untuk dev/MVP.
+﻿// Simple in-memory rate limiter (per-process). Cocok untuk dev/MVP.
 type Bucket = { ts: number[]; limit: number; windowMs: number };
 const store = new Map<string, Bucket>();
 
@@ -20,3 +20,4 @@ export async function rateLimit(key: string, limit: number, windowMs: number) {
   }
   b.ts.push(now);
 }
+

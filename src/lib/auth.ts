@@ -5,3 +5,4 @@ export async function requireUser() {
   if (!s?.user?.id) throw new Error("UNAUTHENTICATED");
   return s.user as { id: string; email?: string | null; name?: string | null };
 }
+

@@ -1,4 +1,4 @@
-import type { NextApiRequest } from 'next';
+﻿import type { NextApiRequest } from 'next';
 import type { NextApiResponse } from 'next';
 import { Server } from 'socket.io';
 
@@ -25,3 +25,4 @@ export default function handler(req: NextApiRequest, res: ResWithSocket) {
   }
   res.end();
 }
+

@@ -1,4 +1,4 @@
-
+﻿
 import { prisma } from "@/server/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
@@ -25,3 +25,4 @@ export async function GET(){
     });
   return new Response(JSON.stringify({ items }), { headers: { "Content-Type":"application/json" } });
 }
+

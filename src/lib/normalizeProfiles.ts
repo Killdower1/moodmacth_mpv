@@ -1,4 +1,4 @@
-import { calcAge } from "./age";
+﻿import { calcAge } from "./age";
 
 export function normalizeProfile(p: any) {
   const photo =
@@ -15,3 +15,4 @@ export function normalizeProfile(p: any) {
     photo,
   };
 }
+

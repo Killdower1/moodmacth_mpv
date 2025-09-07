@@ -1,4 +1,4 @@
-
+﻿
 import BumbleShell from "@/components/BumbleShell";
 async function setMood(formData: FormData){ "use server";
   const mood = String(formData.get("mood") ?? "");
@@ -16,3 +16,4 @@ export default function MoodPage(){
     </BumbleShell>
   );
 }
+

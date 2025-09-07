@@ -1,4 +1,4 @@
-
+﻿
 import { Nunito } from "next/font/google";
 import Link from "next/link";
 const nunito = Nunito({ subsets: ["latin"], weight: ["400","600","700"] });
@@ -18,3 +18,4 @@ export default function BumbleShell({ children }: { children: React.ReactNode })
     </div>
   );
 }
+

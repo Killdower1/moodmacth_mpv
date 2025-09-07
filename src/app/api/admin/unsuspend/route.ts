@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
 import { requireAdminEmails } from "@/lib/admin";
 import { toIntId } from "@/lib/id";
@@ -23,3 +23,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e.message || "error" }, { status: 500 });
   }
 }
+

@@ -9,28 +9,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // Cek duplikat via email saja (jangan pakai id)
-    const exists = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
-    if (exists) return NextResponse.json({ error: "Email already used" }, { status: 409 });
+    const hash = await bcrypt.hash(password, 10); // <- STRING
 
-    const hash = await bcrypt.hash(password, 10);
-
-    // NOTE: kalau schema passwordHash: Bytes -> ganti ke Buffer.from(hash)
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        passwordHash: hash,
+        passwordHash: hash, // <- SIMPAN STRING, BUKAN Buffer
       },
       select: { id: true, email: true },
     });
 
     return NextResponse.json({ ok: true, id: user.id }, { status: 201 });
   } catch (e: any) {
+    if (e?.code === "P2002" && e?.meta?.target?.includes?.("email")) {
+      return NextResponse.json({ error: "Email already used" }, { status: 409 });
+    }
     return NextResponse.json({ error: e?.message ?? "register_failed" }, { status: 500 });
   }
 }
-

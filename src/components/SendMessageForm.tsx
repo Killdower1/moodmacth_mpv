@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 
 export default function SendMessageForm({ matchId }: { matchId: string }) {
@@ -22,3 +22,4 @@ export default function SendMessageForm({ matchId }: { matchId: string }) {
     </form>
   );
 }
+

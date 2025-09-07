@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 
 export default function MoodBar({ isAdult }: { isAdult: boolean }) {
@@ -37,3 +37,4 @@ export default function MoodBar({ isAdult }: { isAdult: boolean }) {
     </div>
   );
 }
+
