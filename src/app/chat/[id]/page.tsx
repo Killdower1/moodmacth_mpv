@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useSocket } from "@/lib/useSocket";
 import { useSession } from "next-auth/react";
 
-export default function ChatPage({ params }: { params: { id: string } }) {
+export default function Page({ params }: { params: { id: string } }) {
   const { id } = params;
   const { data: session } = useSession();
   const [messages, setMessages] = useState<any[]>([]);
