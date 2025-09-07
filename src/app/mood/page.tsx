@@ -7,11 +7,11 @@ export default function MoodPage() {
   const router = useRouter();
   async function pick(mood: string) {
     await fetch("/api/mood", {
-      method: "PATCH",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mood }),
     });
-    router.push("/feed");
+    router.push(`/feed?mood=${encodeURIComponent(mood)}`);
   }
 
   return (

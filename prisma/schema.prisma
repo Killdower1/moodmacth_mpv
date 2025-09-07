@@ -28,7 +28,7 @@ model User {
   age          Int?
   photos       Photo[]
   preferences  Preference?
-  currentMood  Mood?
+  moodSessions MoodSession[]
   swipesMade   Swipe[]   @relation("swipes_made")
   swipesRecv   Swipe[]   @relation("swipes_recv")
   matchesA     Match[]   @relation("matches_a")
@@ -40,6 +40,7 @@ model User {
   conversationsA Conversation[] @relation("conv_a")
   conversationsB Conversation[] @relation("conv_b")
   messages       Message[]
+  notifications Notification[]
   lastActiveAt DateTime? @db.Timestamp(6)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -139,4 +140,12 @@ model Message {
   senderId      String
   text          String
   createdAt     DateTime     @default(now())
+}
+
+model MoodSession {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  mood      Mood
+  createdAt DateTime @default(now())
 }
