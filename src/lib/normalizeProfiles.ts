@@ -2,10 +2,10 @@ import type { Profile } from "@/components/ProfileCard";
 
 export function normalizeProfiles(rows: any[]): Profile[] {
   return rows.map((r: any, i: number) => ({
-    id: r.id?.toString() ?? `u-${i}`,
-    name: r.name ?? r.displayName ?? `User ${i + 1}`,
-    age: r.age ?? 21,
-    gender: r.gender ?? "other",
+    id: String(r.id ?? `u-${i}`),
+    name: r.name ?? r.fullName ?? r.username ?? `User ${i + 1}`,
+    age: r.age ?? r.profile?.age ?? 21,
+    gender: r.gender ?? r.profile?.gender ?? "other",
     photos: Array.isArray(r.photos) && r.photos.length
       ? r.photos
       : [
