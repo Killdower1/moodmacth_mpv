@@ -1,21 +1,7 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
-import SwipeDeck from "@/components/SwipeDeck";
-import { getCurrentMood } from "@/lib/mood";
 
-export default async function FeedPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
-
-  const mood = await getCurrentMood(session.user.id);
-  if (!mood) redirect("/mood");
-
-  return (
-    <section className="px-4 pt-6 pb-10 flex justify-center">
-      <div className="w-full max-w-2xl">
-        <SwipeDeck mood={mood} />
-      </div>
-    </section>
-  );
+import dynamic from "next/dynamic";
+import BumbleShell from "@/components/BumbleShell";
+const SwipeDeck = dynamic(()=>import("@/components/SwipeDeck"), { ssr:false });
+export default function FeedPage(){
+  return (<BumbleShell><SwipeDeck/></BumbleShell>);
 }
