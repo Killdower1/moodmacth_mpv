@@ -72,8 +72,8 @@ export default async function FeedPage() {
         <h1 className="text-3xl font-bold">Moodmacth</h1>
       </header>
 
-      <section className="px-4 pt-4 pb-8 flex justify-center">
-        <div className="w-full max-w-md">
+      <section className="px-4 pt-6 pb-10 flex justify-center">
+        <div className="w-full max-w-2xl">
           <SwipeDeck profiles={profiles} />
         </div>
       </section>
