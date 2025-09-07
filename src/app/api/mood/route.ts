@@ -4,17 +4,26 @@ import { requireUser } from "@/lib/auth";
 import { Mood } from "@prisma/client";
 import { toIntId } from "@/lib/id";
 
-export async function PATCH(req: Request) {
+export async function POST(req: Request) {
   try {
     const me = await requireUser();
-    const meId = toIntId(me.id);
     const { mood } = await req.json();
     if (!mood || !(Object.values(Mood) as string[]).includes(mood)) {
-      return NextResponse.json({ error: "Bad mood" }, { status: 400 });
+      return NextResponse.json({ error: "mood required" }, { status: 400 });
     }
-    await prisma.user.update({
-      where: { id: meId },
-      data: { currentMood: mood as Mood },
+    const userId = toIntId(me.id);
+    await prisma.moodSession.updateMany({
+      where: { userId, active: true },
+      data: { active: false },
+    });
+    await prisma.moodSession.create({
+      data: {
+        userId,
+        mood,
+        startedAt: new Date(),
+        expiresAt: null,
+        active: true,
+      },
     });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
