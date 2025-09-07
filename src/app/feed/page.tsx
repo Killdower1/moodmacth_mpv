@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import SwipeDeck from "@/components/SwipeDeck";
-import type { Profile } from "@/types/profile";
+import { normalizeProfiles } from "@/lib/normalizeProfiles";
+import type { Profile } from "@/components/ProfileCard";
 
 function getAge(birthdate?: Date | null) {
   if (!birthdate) return 0;
@@ -39,13 +40,14 @@ async function getProfiles(userId: number): Promise<Profile[]> {
     },
   });
 
-  return users.map((u) => ({
-    id: String(u.id),
+  const rows = users.map((u) => ({
+    id: u.id,
     name: u.name!,
     age: getAge(u.birthdate),
     gender: u.gender ?? undefined,
     photos: u.profile?.photos ?? [],
   }));
+  return normalizeProfiles(rows);
 }
 
 export default async function FeedPage() {
