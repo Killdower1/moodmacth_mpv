@@ -2,10 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { normalizeProfile } from "@/lib/normalizeProfiles";
+import { Mood } from "@prisma/client";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const me = await requireUser();
+    const meUser = await requireUser();
+    const me = await prisma.user.findUnique({ where: { id: meUser.id }, select: { id: true, currentMood: true } });
+    if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const moodParam = searchParams.get("mood") as Mood | null;
+    const mood = moodParam ?? me.currentMood ?? null;
 
     const pref = await prisma.preference.findUnique({ where: { userId: me.id } });
 
@@ -29,6 +36,7 @@ export async function GET() {
         id: { notIn: Array.from(excludeIds) },
         ...(pref?.preferredGenders?.length ? { gender: { in: pref!.preferredGenders } } : {}),
         ...(pref ? { age: { gte: pref.minAge, lte: pref.maxAge } } : {}),
+        ...(mood ? { currentMood: mood } : {}),
       },
       orderBy: [{ lastActiveAt: "desc" }, { createdAt: "desc" }],
       include: { photos: true },

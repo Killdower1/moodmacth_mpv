@@ -1,55 +1,37 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { log } from "@/lib/logger";
+import { z } from "zod";
 
-const RegisterSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Email tidak valid"),
-  password: z.string().min(6, "Minimal 6 karakter"),
-  username: z.string().trim().min(3).max(32).regex(/^\w+$/).optional(),
-  name: z.string().trim().min(1).optional(),
+const schema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
 });
 
 export async function POST(req: Request) {
   try {
-    const contentType = req.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      return NextResponse.json(
-        { error: "Content-Type harus application/json" },
-        { status: 415 }
-      );
-    }
     const body = await req.json();
-    const parsed = RegisterSchema.safeParse(body);
+    const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      log("POST /api/auth/register: validation error", parsed.error.flatten());
-      return NextResponse.json(
-        { error: "Validasi gagal", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
-    const { name, username, email, password: pwd } = parsed.data;
-    const passwordHash = await bcrypt.hash(pwd, 10);
-    const user = await prisma.user.create({
+    const { name, email, password } = parsed.data;
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    await prisma.user.create({
       data: {
+        name,
         email,
-        username: username ?? null,
-        name: name ?? null,
         passwordHash,
+        preferences: { create: { minAge: 20, maxAge: 45 } },
       },
-      select: { id: true, email: true, username: true, name: true },
     });
-    return NextResponse.json(user, { status: 201 });
-  } catch (err: any) {
-    if (err?.code === "P2002") {
-      log("POST /api/auth/register: duplicate", err);
-      return NextResponse.json(
-        { error: "Email atau username sudah dipakai" },
-        { status: 409 }
-      );
-    }
-    log("POST /api/auth/register: error", err?.message || err);
-    return NextResponse.json({ error: "Register gagal" }, { status: 500 });
+    return NextResponse.json({ ok: true }, { status: 201 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }
 }

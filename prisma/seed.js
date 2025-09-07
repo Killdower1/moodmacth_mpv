@@ -10,16 +10,20 @@ async function main() {
     const isMale = i % 2 === 0;
     const name = faker.person.fullName();
     const email = faker.internet.email({ firstName: name.split(" ")[0] }).toLowerCase();
-    const u = await prisma.user.create({
+    await prisma.user.create({
       data: {
-        email, passwordHash: "dev", name,
+        email,
+        passwordHash: "dev",
+        name,
         gender: isMale ? "male" : "female",
         age: faker.number.int({ min: 21, max: 45 }),
+        currentMood: faker.helpers.arrayElement(["NORMAL","SERIOUS","FUN","HOT"]),
         photos: { create: [{ url: isMale ? male(i) : female(i), isPrimary: true }] },
         preferences: {
           create: {
             preferredGenders: isMale ? ["female"] : ["male"],
-            minAge: 20, maxAge: 45,
+            minAge: 20,
+            maxAge: 45,
           },
         },
         lastActiveAt: new Date(),

@@ -28,6 +28,7 @@ export async function POST(req: Request) {
 
     let matched = false;
     let matchId: string | undefined;
+    let conversationId: string | undefined;
 
     if (action === "LIKE") {
       const theyLiked = await prisma.swipe.findUnique({
@@ -37,11 +38,18 @@ export async function POST(req: Request) {
         const a = me.id < targetId ? me.id : targetId;
         const b = me.id < targetId ? targetId : me.id;
 
-        const match = await prisma.match.upsert({
-          where: { userAId_userBId: { userAId: a, userBId: b } },
-          update: {},
-          create: { userAId: a, userBId: b },
-        });
+        const [match, conversation] = await prisma.$transaction([
+          prisma.match.upsert({
+            where: { userAId_userBId: { userAId: a, userBId: b } },
+            update: {},
+            create: { userAId: a, userBId: b },
+          }),
+          prisma.conversation.upsert({
+            where: { userAId_userBId: { userAId: a, userBId: b } },
+            update: {},
+            create: { userAId: a, userBId: b },
+          }),
+        ]);
 
         await prisma.notification.createMany({
           data: [
@@ -53,10 +61,11 @@ export async function POST(req: Request) {
 
         matched = true;
         matchId = match.id;
+        conversationId = conversation.id;
       }
     }
 
-    return NextResponse.json({ ok: true, matched, matchId, swipe });
+    return NextResponse.json({ ok: true, matched, matchId, conversationId, swipe });
   } catch (e: any) {
     return NextResponse.json({ error: e.message ?? "ERR" }, { status: 500 });
   }
