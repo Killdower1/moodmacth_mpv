@@ -20,30 +20,30 @@ enum Mood {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  gender       String?   // "male" | "female" | "other"
-  age          Int?
-  photos       Photo[]
-  preferences  Preference?
-  moodSessions MoodSession[]
-  swipesMade   Swipe[]   @relation("swipes_made")
-  swipesRecv   Swipe[]   @relation("swipes_recv")
-  matchesA     Match[]   @relation("matches_a")
-  matchesB     Match[]   @relation("matches_b")
-  blocked      Block[]   @relation("blocks_made")
-  blockedBy    Block[]   @relation("blocks_recv")
-  reportsMade  Report[]  @relation("reports_made")
-  reportsRecv  Report[]  @relation("reports_recv")
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String
+  name           String
+  gender         String? // "male" | "female" | "other"
+  age            Int?
+  photos         Photo[]
+  preferences    Preference?
+  moodSessions   MoodSession[]
+  swipesMade     Swipe[]        @relation("swipes_made")
+  swipesRecv     Swipe[]        @relation("swipes_recv")
+  matchesA       Match[]        @relation("matches_a")
+  matchesB       Match[]        @relation("matches_b")
+  blocked        Block[]        @relation("blocks_made")
+  blockedBy      Block[]        @relation("blocks_recv")
+  reportsMade    Report[]       @relation("reports_made")
+  reportsRecv    Report[]       @relation("reports_recv")
   conversationsA Conversation[] @relation("conv_a")
   conversationsB Conversation[] @relation("conv_b")
   messages       Message[]
-  notifications Notification[]
-  lastActiveAt DateTime? @db.Timestamp(6)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  notifications  Notification[]
+  lastActiveAt   DateTime?      @db.Timestamp(6)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model Photo {
@@ -110,10 +110,9 @@ model Report {
   createdAt DateTime @default(now())
 }
 
-
 model Notification {
-  id        String  @id @default(cuid())
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   type      String
   entityId  String?
@@ -121,33 +120,32 @@ model Notification {
 }
 
 model Conversation {
-  id        String @id @default(cuid())
-  userA     User   @relation("conv_a", fields: [userAId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  userA     User      @relation("conv_a", fields: [userAId], references: [id], onDelete: Cascade)
   userAId   String
-  userB     User   @relation("conv_b", fields: [userBId], references: [id], onDelete: Cascade)
+  userB     User      @relation("conv_b", fields: [userBId], references: [id], onDelete: Cascade)
   userBId   String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   messages  Message[]
 
   @@unique([userAId, userBId])
 }
 
 model Message {
-  id            String       @id @default(cuid())
-  conversation  Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   conversationId String
-  sender        User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  senderId      String
-  text          String
-  createdAt     DateTime     @default(now())
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId       String
+  text           String
+  createdAt      DateTime     @default(now())
 }
 
 model MoodSession {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  mood      Mood
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  mood   Mood
 
   createdAt DateTime @default(now())
-
 }

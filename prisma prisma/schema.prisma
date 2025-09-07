@@ -5,6 +5,7 @@ model User {
   passwordHash String
   name       String?
   bio        String?
+  age        Int?
   gender     String?
   birthdate  DateTime?
   avatarUrl  String?
