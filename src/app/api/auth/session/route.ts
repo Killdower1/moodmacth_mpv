@@ -1,9 +1,16 @@
-import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { getEmailFromToken } from "@/lib/mock-auth"
+﻿import { NextResponse } from "next/server";
+import { prisma } from "@/server/prisma";
+import { readSession } from "@/lib/session-cookie";
 
 export async function GET() {
-  const token = cookies().get("session")?.value
-  const email = getEmailFromToken(token ?? null)
-  return NextResponse.json({ authenticated: !!email, email: email ?? null })
+  const s = readSession();
+  if (!s?.userId) {
+    return NextResponse.json({ ok: false }, { status: 401 });
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: String(s.userId) },
+    select: { id: true, email: true, name: true },
+  });
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  return NextResponse.json({ ok: true, user });
 }

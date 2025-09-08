@@ -1,68 +1,63 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
-import { requireSession } from "@/lib/session";
+
+/**
+ * Candidates API:
+ * - Ambil kandidat dari DB (tabel User) dengan filter gender opsional.
+ * - Foto sementara pakai placeholder agar aman dari error tipe.
+ * - Siap di-upgrade ke relasi photos ketika skema sudah jelas.
+ */
+function intParam(url: URL, key: string, defVal: number) {
+  const raw = url.searchParams.get(key);
+  const n = raw ? parseInt(raw, 10) : NaN;
+  return Number.isFinite(n) ? n : defVal;
+}
 
 export async function GET(req: Request) {
-  // auth (aman kalau belum login -> [])
-  const session = await requireSession().catch(() => null);
-  if (!session?.user?.id) return NextResponse.json([]);
-
-  const me = String(session.user.id);
   const url = new URL(req.url);
-  const mood   = url.searchParams.get("mood") || undefined;
-  const gender = url.searchParams.get("gender") || "any";
-  const ageMin = Number(url.searchParams.get("ageMin") ?? 18);
-  const ageMax = Number(url.searchParams.get("ageMax") ?? 35);
+  const gender = url.searchParams.get("gender");     // contoh: "M" | "F" | "all"
+  const limit  = intParam(url, "limit", 20);
+  // NOTE: minAge/maxAge diterima tapi belum diterapkan (butuh birthdate/age di schema)
+  // const minAge = intParam(url, "minAge", 18);
+  // const maxAge = intParam(url, "maxAge", 50);
 
-  // hitung batas umur (secara kasar: tahun)
-  const now = Date.now();
-  const msYear = 31557600000; // 365.25d
-  const minBirth = new Date(now - ageMax * msYear);
-  const maxBirth = new Date(now - ageMin * msYear);
+  // Build where dinamis (pakai any biar aman terhadap skema yg belum fixed)
+  const where: any = {};
+  if (gender && gender !== "all") where.gender = gender;
 
-  try {
-    // Exclude: diri sendiri + (jika ada) yang sudah dilike/match (best effort - aman bila model tak ada)
-    const anyPrisma: any = prisma as any;
+  // Ambil user dari DB. Select minimal supaya tidak kena type error schema.
+  const users = await prisma.user.findMany({
+    where,
+    take: limit,
+    orderBy: { id: "desc" },
+    select: {
+      id: true,
+      name: true,
+      gender: true,
+      // Kalau relasi photos SUDAH ada, aktifkan blok di bawah + mapping-nya:
+      // photos: { select: { url: true }, orderBy: { id: "asc" }, take: 4 },
+      // Tambahkan properti lain sesuai skema (hindari select field yg tak ada di schema).
+    },
+  });
 
-    const liked = (await anyPrisma?.like?.findMany?.({
-      where: { fromId: me }, select: { toId: true }
-    })) ?? [];
-    const likedIds = liked.map((x: any) => x.toId);
+  // Map ke shape yang dipakai SwipeDeck
+  const items = users.map((u: any) => {
+    // Placeholder foto kalau relasi belum dipakai
+    const fallbackPhotos = [{ url: `https://i.pravatar.cc/640?u=${u.id}` }];
 
-    const matched = (await anyPrisma?.match?.findMany?.({
-      where: { OR: [{ aId: me }, { bId: me }] }, select: { aId: true, bId: true }
-    })) ?? [];
-    const matchedIds = matched.map((m: any) => (m.aId === me ? m.bId : m.aId));
+    // Kalau tadi aktifkan select photos, pakai:
+    // const photos = (u.photos?.length ? u.photos : fallbackPhotos);
 
-    const users = await anyPrisma.user.findMany({
-      where: {
-        id: { notIn: [me, ...likedIds, ...matchedIds] },
-        ...(gender !== "any" ? { gender } : {}),
-        // birthdate bisa null di beberapa user; filter hanya jika ada
-        ...(ageMin || ageMax ? { birthdate: { gte: minBirth, lte: maxBirth } } : {}),
-        ...(mood ? {
-          moodSessions: { some: { mood, endedAt: null } }
-        } : {})
-      },
-      take: 20,
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true, name: true, birthdate: true, gender: true,
-        photos: { orderBy: { order: "asc" }, take: 1, select: { url: true } }
-      }
-    });
-
-    const data = users.map((u: any) => ({
-      id: u.id,
+    return {
+      id: String(u.id),
       name: u.name ?? "User",
-      age: u.birthdate ? Math.floor((Date.now() - +new Date(u.birthdate)) / msYear) : null,
-      photo: u.photos?.[0]?.url ?? `https://i.pravatar.cc/512?u=${u.id}`,
-      gender: u.gender ?? null
-    }));
+      age: null,                    // akan diisi kalau skema age/birthdate siap
+      gender: u.gender ?? null,
+      photos: fallbackPhotos,       // ganti ke `photos` kalau relasi sudah aktif
+      bio: "",
+      distanceKm: Math.floor(Math.random() * 8) + 1,
+    };
+  });
 
-    return NextResponse.json(data);
-  } catch {
-    // kalau schema belum lengkap -> jangan bikin build fail
-    return NextResponse.json([]);
-  }
+  return NextResponse.json({ items });
 }

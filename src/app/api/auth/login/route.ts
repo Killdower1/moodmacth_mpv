@@ -1,12 +1,38 @@
-import { NextResponse } from "next/server"
-import { users, issueOtp } from "@/lib/mock-auth"
+﻿import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/server/prisma";
+import { buildSessionToken, attachSessionCookie } from "@/lib/session-cookie";
+
+export async function GET() {
+  return NextResponse.json({ status: "ok", endpoint: "login" });
+}
 
 export async function POST(req: Request) {
-  const { email, password } = await req.json()
-  const ok = users.some(u => u.email === email && u.password === password)
-  if (!ok) return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 })
+  try {
+    const { email, password } = await req.json();
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email & password wajib" }, { status: 400 });
+    }
 
-  const code = issueOtp(email)
-  console.log("[DEV] OTP for", email, "=", code)
-  return NextResponse.json({ ok: true, devOtp: code })
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true, passwordHash: true },
+    });
+    if (!user?.passwordHash) {
+      return NextResponse.json({ error: "Email / password salah" }, { status: 401 });
+    }
+
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) {
+      return NextResponse.json({ error: "Email / password salah" }, { status: 401 });
+    }
+
+    const token = buildSessionToken(String(user.id));
+    const res = NextResponse.json({ ok: true, next: "/onboarding", user: { id: user.id, email: user.email, name: user.name } });
+    attachSessionCookie(res, token);
+    return res;
+  } catch (err) {
+    console.error("LOGIN_ERR", err);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 }

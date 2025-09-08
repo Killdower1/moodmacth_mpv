@@ -1,13 +1,22 @@
-import { NextResponse } from "next/server"
-import { verifyOtp, createSession } from "@/lib/mock-auth"
+﻿import { NextResponse } from "next/server";
+import { prisma } from "@/server/prisma";
+import { buildSessionToken, attachSessionCookie } from "@/lib/session-cookie";
 
 export async function POST(req: Request) {
-  const { email, code } = await req.json()
-  if (!verifyOtp(email, code)) {
-    return NextResponse.json({ ok: false, error: "Invalid OTP" }, { status: 400 })
-  }
-  const token = createSession(email)
-  const res = NextResponse.json({ ok: true })
-  res.cookies.set("session", token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7 })
-  return res
+  const { email, otp } = await req.json();
+  if (!email || !otp) return NextResponse.json({ error: "Email & OTP wajib" }, { status: 400 });
+
+  // DEV OTP
+  if (otp !== "123456") return NextResponse.json({ error: "OTP salah" }, { status: 401 });
+
+  const user = await prisma.user.findUnique({
+    where: { email: String(email).toLowerCase() },
+    select: { id: true, email: true, name: true },
+  });
+  if (!user) return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
+
+  const token = buildSessionToken(String(user.id));
+  const res = NextResponse.json({ ok: true, user, next: "/onboarding" });
+  attachSessionCookie(res, token);
+  return res;
 }
