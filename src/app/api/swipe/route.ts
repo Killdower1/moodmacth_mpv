@@ -1,38 +1,23 @@
-﻿import { NextResponse } from "next/server";
-import { prisma } from "@/server/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
+import { getEmailFromToken } from "@/lib/mock-auth"
+import { addLike, addBlock } from "@/lib/mock-data"
 
-export async function POST(req: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    const fromId = String((session as any)?.user?.id ?? "");
-    if (!fromId) return NextResponse.json({ ok: false, error: "UNAUTHENTICATED" }, { status: 401 });
+async function handle(req: Request) {
+  const token = cookies().get("session")?.value
+  const email = getEmailFromToken(token ?? null)
+  if (!email) return NextResponse.json({ ok:false, error:"Unauthorized" }, { status: 401 })
 
-    const { toUserId, direction } = await req.json();
-    if (!toUserId || !["like","nope"].includes(direction)) {
-      return NextResponse.json({ ok: false, error: "BAD_INPUT" }, { status: 400 });
-    }
+  const body = await req.json().catch(() => ({}))
+  const id = String(body?.id ?? "")
+  const action = String(body?.action ?? body?.type ?? "like") // fallback
+  if (!id) return NextResponse.json({ ok:false, error:"Missing id" }, { status: 400 })
 
-    // cek tabel Swipe ada?
-    const hasSwipe = await prisma.$queryRaw<{ table_name: string }[]>`
-      SELECT table_name FROM information_schema.tables
-      WHERE table_schema='public' AND table_name IN ('Swipe','swipe');
-    `;
-    if (hasSwipe.length > 0) {
-      // coba create swipe (userId bisa int/string; coba keduanya)
-      const data: any = { fromId: fromId as any, toId: toUserId as any, direction };
-      try { await prisma.swipe.create({ data }); }
-      catch {
-        try {
-          const f = Number(fromId), t = Number(toUserId);
-          await prisma.swipe.create({ data: { ...data, fromId: f, toId: t } as any });
-        } catch {}
-      }
-    }
+  if (action === "dislike" || action === "skip") addBlock(email, id)
+  else addLike(email, id)
 
-    return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "swipe_failed" }, { status: 200 });
-  }
+  const isMatch = false  // dummy selalu false
+  return NextResponse.json({ ok:true, match: isMatch })
 }
+
+export async function POST(req: Request) { return handle(req) }

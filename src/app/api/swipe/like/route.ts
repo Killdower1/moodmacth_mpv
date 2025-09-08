@@ -1,26 +1,23 @@
-﻿import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/options";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
+import { getEmailFromToken } from "@/lib/mock-auth"
+import { addLike, addBlock } from "@/lib/mock-data"
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+async function handle(req: Request) {
+  const token = cookies().get("session")?.value
+  const email = getEmailFromToken(token ?? null)
+  if (!email) return NextResponse.json({ ok:false, error:"Unauthorized" }, { status: 401 })
 
-  const { toId } = await req.json();
-  if (!toId) return NextResponse.json({ error: "Missing toId" }, { status: 400 });
+  const body = await req.json().catch(() => ({}))
+  const id = String(body?.id ?? "")
+  const action = String(body?.action ?? body?.type ?? "like") // fallback
+  if (!id) return NextResponse.json({ ok:false, error:"Missing id" }, { status: 400 })
 
-  const me = await prisma.user.findUnique({ where: { email: session.user.email }});
-  if (!me) return NextResponse.json({ error: "No user" }, { status: 404 });
+  if (action === "dislike" || action === "skip") addBlock(email, id)
+  else addLike(email, id)
 
-  await prisma.like.upsert({ where: { fromId_toId: { fromId: me.id, toId } }, create: { fromId: me.id, toId }, update: {} });
-
-  const back = await prisma.like.findUnique({ where: { fromId_toId: { fromId: toId, toId: me.id } } });
-  if (back) {
-    const exists = await prisma.match.findFirst({ where: { OR: [{ aId: me.id, bId: toId }, { aId: toId, bId: me.id }] } });
-    if (!exists) { await prisma.match.create({ data: { aId: me.id, bId: toId } }); }
-    return NextResponse.json({ matched: true });
-  }
-  return NextResponse.json({ matched: false });
+  const isMatch = false  // dummy selalu false
+  return NextResponse.json({ ok:true, match: isMatch })
 }
+
+export async function POST(req: Request) { return handle(req) }
