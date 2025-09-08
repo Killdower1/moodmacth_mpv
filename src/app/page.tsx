@@ -1,8 +1,9 @@
-﻿import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { verifySession } from "@/lib/auth"
-export default async function Page() {
+import { cookies } from "next/headers"
+import store from "@/lib/mock-auth"
+
+export default function Page() {
   const token = cookies().get("session")?.value
-  if (verifySession(token)) redirect("/home")
+  if (token && (store as any).sessions?.[token]) redirect("/mood")
   redirect("/login")
 }

@@ -1,24 +1,19 @@
-﻿"use client"
+"use client"
+
+import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
-import { useTheme } from "next-themes"
-import { useRouter } from "next/navigation"
+
 export default function SettingsPage() {
-  const { setTheme, theme } = useTheme()
   const router = useRouter()
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" })
-    router.replace("/login")
+    router.push("/login")
   }
   return (
     <AppShell>
-      <div className="space-y-4">
-        <div className="text-sm text-muted-foreground">Tema saat ini: {theme}</div>
-        <div className="flex gap-2">
-          <Button onClick={() => setTheme("light")}>Light</Button>
-          <Button onClick={() => setTheme("dark")}>Dark</Button>
-          <Button onClick={() => setTheme("system")}>System</Button>
-        </div>
+      <div className="container mx-auto max-w-md px-4">
+        <h1 className="mb-4 text-lg font-semibold">Settings</h1>
         <Button variant="outline" onClick={logout}>Logout</Button>
       </div>
     </AppShell>

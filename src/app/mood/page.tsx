@@ -44,7 +44,7 @@ export default function MoodPage() {
 
       {/* Deck center */}
       <div className="w-full flex justify-center mt-6 px-4">
-        <div className="relative aspect-[3/4] w-[min(92vw,420px)]">
+        <div className="relative aspect-[3/4] w-[min(92vw,460px)]">
           {current.length === 0 ? (
             <div className="grid h-full place-items-center text-sm text-muted-foreground">
               Habis. <button className="ml-1 underline" onClick={() => setIndex(0)}>Reset</button>
