@@ -1,50 +1,49 @@
 ﻿import { cookies } from "next/headers";
-import type { NextResponse } from "next/server";
-import crypto from "crypto";
 
-export const COOKIE_NAME = "mm_session";
-const secret = process.env.AUTH_SECRET || "dev-secret";
-const isProd = process.env.NODE_ENV === "production";
+const NAME = "mm_session";
 
-function sign(payload: string) {
-  return crypto.createHmac("sha256", secret).update(payload).digest("hex");
+function toB64Url(s: string) {
+  return Buffer.from(s, "utf8").toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+function fromB64Url(t: string) {
+  const pad = t.length % 4 === 0 ? "" : "=".repeat(4 - (t.length % 4));
+  return Buffer.from(t.replace(/-/g, "+").replace(/_/g, "/") + pad, "base64").toString("utf8");
 }
 
 export function buildSessionToken(userId: string) {
-  const ts = Date.now().toString();
-  const payload = `${userId}.${ts}`;
-  const token = `${payload}.${sign(payload)}`;
-  return token;
+  return toB64Url(JSON.stringify({ userId, iat: Date.now() }));
 }
 
-export function attachSessionCookie(res: NextResponse, token: string) {
-  res.cookies.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isProd,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 hari
-  });
+export function parseSessionToken(token?: string | null) {
+  try {
+    if (!token) return null;
+    const payload = JSON.parse(fromB64Url(token));
+    if (typeof payload?.userId === "string") return { userId: payload.userId as string };
+    return null;
+  } catch { return null; }
 }
 
-export function readSession(): { userId: string } | null {
-  const token = cookies().get(COOKIE_NAME)?.value;
-  if (!token) return null;
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [userId, ts, sig] = parts;
-  const payload = `${userId}.${ts}`;
-  if (sig !== sign(payload)) return null;
-  return { userId };
+export function readSession() {
+  const token = cookies().get(NAME)?.value;
+  return parseSessionToken(token);
 }
 
-export function destroySessionCookie(res: NextResponse) {
-  // delete via expired cookie
-  res.cookies.set(COOKIE_NAME, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isProd,
-    path: "/",
-    maxAge: 0,
-  });
+export function attachSessionCookie(res: Response & { cookies?: any }, token: string) {
+  const maxAge = 60 * 60 * 24 * 30; // 30 hari
+  if ((res as any).cookies?.set) {
+    (res as any).cookies.set(NAME, token, {
+      httpOnly: true, sameSite: "lax", path: "/", secure: false, maxAge
+    });
+  } else {
+    res.headers.append("Set-Cookie", `${NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`);
+  }
+}
+
+export function clearSessionCookie(res: Response & { cookies?: any }) {
+  if ((res as any).cookies?.set) {
+    (res as any).cookies.set(NAME, "", { path: "/", maxAge: 0 });
+  } else {
+    res.headers.append("Set-Cookie", `${NAME}=; Path=/; Max-Age=0`);
+  }
 }
