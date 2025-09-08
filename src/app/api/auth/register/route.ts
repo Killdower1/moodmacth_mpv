@@ -1,8 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/server/prisma";
-import { attachSessionCookie, buildSessionToken } from "@/lib/session-cookie";
-import { randomBytes } from "crypto";
+import { buildSessionToken, setSessionCookie } from "@/lib/session-cookie";
 
 export async function GET() {
   return NextResponse.json({ status: "ok", endpoint: "register" });
@@ -10,42 +9,35 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const emailRaw = String(body?.email ?? "").trim().toLowerCase();
-    const name = body?.name ?? (emailRaw.split("@")[0] || "User");
-    const passwordInput = typeof body?.password === "string" ? body.password : "";
+    const { email, password, name } = await req.json();
+    if (!email) return NextResponse.json({ error: "Email wajib" }, { status: 400 });
 
-    if (!emailRaw) {
-      return NextResponse.json({ error: "Email wajib" }, { status: 400 });
-    }
+    const emailNorm = String(email).trim().toLowerCase();
 
-    const existed = await prisma.user.findUnique({ where: { email: emailRaw } });
-    if (existed) {
-      return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 409 });
-    }
+    const existed = await prisma.user.findUnique({ where: { email: emailNorm } });
+    if (existed) return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 409 });
 
-    // Pastikan SELALU ada passwordHash: pakai input user (>=6 char) atau random string
-    const rawPwd = passwordInput.length >= 6 ? passwordInput : randomBytes(12).toString("hex");
-    const passwordHash = await bcrypt.hash(rawPwd, 10);
+    // Jika ada password -> hash; kalau tidak ada, gunakan string kosong (schema butuh string non-null)
+    const passwordHash = password ? await bcrypt.hash(String(password), 10) : "";
 
     const user = await prisma.user.create({
-      data: { email: emailRaw, name, passwordHash },
+      data: {
+        email: emailNorm,
+        name: name ?? emailNorm.split("@")[0],
+        passwordHash, // <-- WAJIB ada, walau boleh string kosong
+      },
       select: { id: true, email: true, name: true },
     });
 
-    // Set session cookie + auto login + arahkan ke onboarding
+    // auto-login: set cookie sesi lalu redirect /onboarding (untuk HTML) atau JSON (untuk fetch)
     const token = buildSessionToken(String(user.id));
+    setSessionCookie(token);
 
     const accept = req.headers.get("accept") ?? "";
     if (accept.includes("text/html")) {
-      const res = NextResponse.redirect(new URL("/onboarding", req.url), { status: 303 });
-      attachSessionCookie(res, token);
-      return res;
+      return NextResponse.redirect(new URL("/onboarding", req.url), { status: 303 });
     }
-
-    const res = NextResponse.json({ ok: true, user, next: "/onboarding" }, { status: 201 });
-    attachSessionCookie(res, token);
-    return res;
+    return NextResponse.json({ ok: true, user, next: "/onboarding" }, { status: 201 });
   } catch (err) {
     console.error("REGISTER_ERR", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

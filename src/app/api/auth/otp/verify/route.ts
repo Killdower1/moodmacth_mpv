@@ -1,22 +1,40 @@
 ﻿import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
-import { buildSessionToken, attachSessionCookie } from "@/lib/session-cookie";
+import { setSessionCookie, buildSessionToken } from "@/lib/session-cookie";
 
 export async function POST(req: Request) {
-  const { email, otp } = await req.json();
-  if (!email || !otp) return NextResponse.json({ error: "Email & OTP wajib" }, { status: 400 });
+  try {
+    const { email, otp } = await req.json();
+    if (!email || !otp) {
+      return NextResponse.json({ error: "Email & OTP wajib" }, { status: 400 });
+    }
 
-  // DEV OTP
-  if (otp !== "123456") return NextResponse.json({ error: "OTP salah" }, { status: 401 });
+    // DEV: validasi OTP dummy
+    if (String(otp) !== "123456") {
+      return NextResponse.json({ error: "Kode OTP salah" }, { status: 401 });
+    }
 
-  const user = await prisma.user.findUnique({
-    where: { email: String(email).toLowerCase() },
-    select: { id: true, email: true, name: true },
-  });
-  if (!user) return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
+    const user = await prisma.user.findUnique({
+      where: { email: String(email).trim().toLowerCase() },
+      select: { id: true, email: true, name: true },
+    });
+    if (!user) return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
 
-  const token = buildSessionToken(String(user.id));
-  const res = NextResponse.json({ ok: true, user, next: "/onboarding" });
-  attachSessionCookie(res, token);
-  return res;
+    // set cookie sesi
+    const token = buildSessionToken(String(user.id));
+    setSessionCookie(token);
+
+    const accept = req.headers.get("accept") ?? "";
+    if (accept.includes("text/html")) {
+      return NextResponse.redirect(new URL("/onboarding", req.url), { status: 303 });
+    }
+    return NextResponse.json({ ok: true, user, next: "/onboarding" });
+  } catch (err) {
+    console.error("OTP_VERIFY_ERR", err);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  return NextResponse.json({ ok: false, hint: "POST email + otp" }, { status: 405 });
 }
