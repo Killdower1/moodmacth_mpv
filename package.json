@@ -14,7 +14,8 @@
     "db:reset": "prisma migrate reset --force",
     "db:push": "prisma db push",
     "seed": "node prisma/seed.js",
-    "seed:cred": "tsx prisma/seed_credentials.ts"
+    "seed:cred": "tsx prisma/seed_credentials.ts",
+    "seed:swipe": "tsx prisma/seed_swipe.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^10.0.0",
