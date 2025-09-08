@@ -2,8 +2,14 @@
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
 export default function SettingsPage() {
   const { setTheme, theme } = useTheme()
+  const router = useRouter()
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" })
+    router.replace("/login")
+  }
   return (
     <AppShell>
       <div className="space-y-4">
@@ -13,7 +19,7 @@ export default function SettingsPage() {
           <Button onClick={() => setTheme("dark")}>Dark</Button>
           <Button onClick={() => setTheme("system")}>System</Button>
         </div>
-        <Button variant="outline">Logout</Button>
+        <Button variant="outline" onClick={logout}>Logout</Button>
       </div>
     </AppShell>
   )
