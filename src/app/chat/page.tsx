@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -15,6 +15,22 @@ export default function ChatPage() {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
+  try {
+    const res = await fetch("/api/chats", { cache: "no-store" });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.warn("GET /api/chats failed", res.status, text);
+      setData([]); setLoading(false);
+      return;
+    }
+    const json = await res.json();
+    setData(json.chats ?? []);
+    setLoading(false);
+  } catch (e) {
+    console.error("GET /api/chats error", e);
+    setData([]); setLoading(false);
+  }
+};
       const res = await fetch("/api/chats", { cache: "no-store" });
       const json = await res.json();
       if (mounted) { setData(json.chats ?? []); setLoading(false); }
