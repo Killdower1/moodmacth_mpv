@@ -1,4 +1,4 @@
-generator client {
+﻿generator client {
   provider = "prisma-client-js"
 }
 
@@ -169,3 +169,4 @@ model Match {
   a User @relation("matchA", fields: [aId], references: [id], onDelete: Cascade)
   b User @relation("matchB", fields: [bId], references: [id], onDelete: Cascade)
 }
+
