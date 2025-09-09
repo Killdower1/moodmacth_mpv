@@ -1,4 +1,4 @@
-generator client {
+﻿generator client {
   provider = "prisma-client-js"
 }
 
@@ -44,8 +44,8 @@ model User {
   lastActiveAt   DateTime?      @db.Timestamp(6)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  likesGiven     Like[]         @relation("likesGiven")
-  likesRecv      Like[]         @relation("likesRecv")
+  likesGiven Like[] @relation("likesGiven")
+  likesRecv  Like[] @relation("likesRecv")
 }
 
 model Photo {
@@ -157,8 +157,11 @@ model Like {
   fromId    String
   toId      String
   createdAt DateTime @default(now())
-  from      User     @relation("likesGiven", fields: [fromId], references: [id], onDelete: Cascade)
-  to        User     @relation("likesRecv", fields: [toId], references: [id], onDelete: Cascade)
-
+  from User @relation("likesGiven", fields: [fromId], references: [id], onDelete: Cascade)
+  to   User @relation("likesRecv",  fields: [toId],   references: [id], onDelete: Cascade)
   @@unique([fromId, toId])
 }
+
+
+
+

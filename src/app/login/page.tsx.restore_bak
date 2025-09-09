@@ -1,0 +1,80 @@
+﻿"use client";
+
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const params = useSearchParams();
+  const router = useRouter();
+  const err = params.get("error");
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const res = await signIn("credentials", { email, otp, redirect: false });
+    setLoading(false);
+    if (res?.ok) router.replace("/");
+    if (res?.error) {
+      // next-auth akan pasang ?error=CredentialsSignin, tapi kita juga kasih feedback inline
+      alert("Login gagal. Cek email/OTP.");
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <div className="mb-6 text-center">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-700/60 border border-slate-600/60 shadow">
+            <svg width="20" height="20" viewBox="0 0 24 24" className="opacity-90"><path fill="currentColor" d="M12 12q-1.65 0-2.825-1.175T8 8q0-1.65 1.175-2.825T12 4q1.65 0 2.825 1.175T16 8q0 1.65-1.175 2.825T12 12m-6 8v-1.5q0-.85.438-1.55T7 15.9q1.4-.7 2.9-1.05T12 14.5q1.6 0 3.1.35t2.9 1.05q.65.35 1.088 1.05T19 18.5V20z"/></svg>
+          </div>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Welcome back</h1>
+          <p className="text-slate-400">Masuk dengan email + OTP dev</p>
+        </div>
+
+        {err && (
+          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            Login gagal: {err}
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="rounded-2xl border border-slate-700/50 bg-slate-800/50 backdrop-blur p-5 shadow-xl space-y-4">
+          <div>
+            <label className="block text-sm mb-1">Email</label>
+            <input
+              className="w-full rounded-xl bg-slate-900/50 border border-slate-700 px-3 py-2 outline-none ring-0 focus:border-slate-500"
+              type="email" placeholder="you@example.com"
+              value={email} onChange={(e)=>setEmail(e.target.value)} required
+            />
+          </div>
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm mb-1">OTP</label>
+              <span className="text-xs text-slate-400">hint: <code>111111</code></span>
+            </div>
+            <input
+              className="w-full rounded-xl bg-slate-900/50 border border-slate-700 px-3 py-2 outline-none ring-0 focus:border-slate-500 tracking-[0.3em]"
+              type="text" inputMode="numeric" placeholder="••••••"
+              value={otp} onChange={(e)=>setOtp(e.target.value)} required
+            />
+          </div>
+
+          <button
+            disabled={loading}
+            className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 disabled:opacity-60 px-3 py-2 font-medium shadow-lg shadow-indigo-900/30 transition"
+          >
+            {loading ? "Signing in..." : "Masuk"}
+          </button>
+
+          <p className="text-center text-sm text-slate-400">
+            Belum punya akun?{" "}
+            <a className="underline underline-offset-4 hover:text-slate-200" href="/register">Daftar</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}

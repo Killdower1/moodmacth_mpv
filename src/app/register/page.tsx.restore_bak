@@ -1,0 +1,111 @@
+﻿"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function RegisterPage() {
+  const [email, setEmail] = useState("");
+  const [name, setName]   = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm]   = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+  const [ok, setOk]             = useState(false);
+  const router = useRouter();
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setOk(false);
+    if (password !== confirm) { setError("Password & konfirmasi tidak sama"); return; }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, password }),
+      });
+      const data = await res.json().catch(()=> ({}));
+      if (!res.ok) throw new Error(data?.message || "Register gagal");
+      setOk(true);
+      setTimeout(()=> router.push("/login"), 900);
+    } catch (e:any) {
+      setError(e?.message || "Register gagal");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <div className="mb-6 text-center">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-700/60 border border-slate-600/60 shadow">
+            <svg width="20" height="20" viewBox="0 0 24 24" className="opacity-90"><path fill="currentColor" d="M12 12q-1.65 0-2.825-1.175T8 8q0-1.65 1.175-2.825T12 4q1.65 0 2.825 1.175T16 8q0 1.65-1.175 2.825T12 12m-6 8v-1.5q0-.85.438-1.55T7 15.9q1.4-.7 2.9-1.05T12 14.5q1.6 0 3.1.35t2.9 1.05q.65.35 1.088 1.05T19 18.5V20z"/></svg>
+          </div>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Create account</h1>
+          <p className="text-slate-400">Daftar cepat untuk mulai</p>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+        {ok && (
+          <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+            Berhasil! Mengarahkan ke halaman login…
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="rounded-2xl border border-slate-700/50 bg-slate-800/50 backdrop-blur p-5 shadow-xl space-y-4">
+          <div>
+            <label className="block text-sm mb-1">Nama</label>
+            <input
+              className="w-full rounded-xl bg-slate-900/50 border border-slate-700 px-3 py-2 outline-none focus:border-slate-500"
+              type="text" placeholder="Nama kamu"
+              value={name} onChange={(e)=>setName(e.target.value)} required
+            />
+          </div>
+          <div>
+            <label className="block text-sm mb-1">Email</label>
+            <input
+              className="w-full rounded-xl bg-slate-900/50 border border-slate-700 px-3 py-2 outline-none focus:border-slate-500"
+              type="email" placeholder="you@example.com"
+              value={email} onChange={(e)=>setEmail(e.target.value)} required
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm mb-1">Password</label>
+              <input
+                className="w-full rounded-xl bg-slate-900/50 border border-slate-700 px-3 py-2 outline-none focus:border-slate-500"
+                type="password" placeholder="••••••••"
+                value={password} onChange={(e)=>setPassword(e.target.value)} required
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Konfirmasi</label>
+              <input
+                className="w-full rounded-xl bg-slate-900/50 border border-slate-700 px-3 py-2 outline-none focus:border-slate-500"
+                type="password" placeholder="••••••••"
+                value={confirm} onChange={(e)=>setConfirm(e.target.value)} required
+              />
+            </div>
+          </div>
+
+          <button
+            disabled={loading}
+            className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-60 px-3 py-2 font-medium shadow-lg shadow-emerald-900/30 transition"
+          >
+            {loading ? "Mendaftar…" : "Daftar"}
+          </button>
+
+          <p className="text-center text-sm text-slate-400">
+            Sudah punya akun?{" "}
+            <a className="underline underline-offset-4 hover:text-slate-200" href="/login">Masuk</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
