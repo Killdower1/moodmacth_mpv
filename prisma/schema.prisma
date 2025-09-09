@@ -44,6 +44,9 @@ model User {
   lastActiveAt   DateTime?      @db.Timestamp(6)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  likesGiven     Like[]         @relation("likesGiven")
+  likesRecv      Like[]         @relation("likesRecv")
+  consents       Consent[]
 }
 
 model Photo {
@@ -85,6 +88,7 @@ model Match {
   userB     User     @relation("matches_b", fields: [userBId], references: [id], onDelete: Cascade)
   userBId   String
   createdAt DateTime @default(now())
+  chat      Chat?
 
   @@unique([userAId, userBId])
 }
@@ -139,6 +143,10 @@ model Message {
   senderId       String
   text           String
   createdAt      DateTime     @default(now())
+  chatId         String?
+  chat           Chat?        @relation(fields: [chatId], references: [id])
+
+  @@index([chatId, createdAt])
 }
 
 model MoodSession {
@@ -155,8 +163,9 @@ model Like {
   fromId    String
   toId      String
   createdAt DateTime @default(now())
-  from User @relation("likesGiven", fields: [fromId], references: [id], onDelete: Cascade)
-  to   User @relation("likesRecv",  fields: [toId],   references: [id], onDelete: Cascade)
+  from      User     @relation("likesGiven", fields: [fromId], references: [id], onDelete: Cascade)
+  to        User     @relation("likesRecv", fields: [toId], references: [id], onDelete: Cascade)
+
   @@unique([fromId, toId])
 }
 
@@ -170,6 +179,7 @@ model Chat {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
+
 model Consent {
   id             String   @id @default(cuid())
   chatId         String
@@ -181,11 +191,12 @@ model Consent {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  chat   Chat   @relation(fields: [chatId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  chat Chat @relation(fields: [chatId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([chatId, userId])
 }
+
 enum MessageType {
   TEXT
   IMAGE
@@ -193,4 +204,5 @@ enum MessageType {
   SYSTEM
   CALL
 }
+
 // <<< CHAT_V1_END

@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/auth-session";
 
-async function ensureMember(chatId: string, userId: string) {
+async function ensureMember(id: string, userId: string) {
   const c = await prisma.chat.findUnique({
-    where: { id: chatId },
+    where: { id: id },
     select: { match: { select: { userAId: true, userBId: true } } },
   });
   if (!c) throw new Response("CHAT_NOT_FOUND", { status: 404 });
@@ -12,13 +12,13 @@ async function ensureMember(chatId: string, userId: string) {
   if (userId !== userAId && userId !== userBId) throw new Response("FORBIDDEN", { status: 403 });
 }
 
-export async function GET(_: Request, { params }: { params: { chatId: string } }) {
+export async function GET(_: Request, { params }: { params: { id: string }) {
   const userId = await getSessionUserId();
-  await ensureMember(params.chatId, userId);
+  await ensureMember(params.id, userId);
 
   const [mine, others] = await Promise.all([
-    prisma.consent.findUnique({ where: { chatId_userId: { chatId: params.chatId, userId } } }),
-    prisma.consent.findMany({ where: { chatId: params.chatId, NOT: { userId } } }),
+    prisma.consent.findUnique({ where: { chatId_userId: { id: params.id, userId } } }),
+    prisma.consent.findMany({ where: { id: params.id, NOT: { userId } } }),
   ]);
   const peer = others[0] ?? null;
 
@@ -32,16 +32,16 @@ export async function GET(_: Request, { params }: { params: { chatId: string } }
   return NextResponse.json({ mine, peer, allowed });
 }
 
-export async function PUT(req: Request, { params }: { params: { chatId: string } }) {
+export async function PUT(req: Request, { params }: { params: { id: string }) {
   const userId = await getSessionUserId();
-  await ensureMember(params.chatId, userId);
+  await ensureMember(params.id, userId);
 
   const payload = await req.json() as Partial<{
     allowPhoto: boolean; allowLocation: boolean; allowVideoCall: boolean; allowVoiceCall: boolean;
   }>;
 
   const updated = await prisma.consent.upsert({
-    where: { chatId_userId: { chatId: params.chatId, userId } },
+    where: { chatId_userId: { id: params.id, userId } },
     update: {
       allowPhoto:     payload.allowPhoto     ?? undefined,
       allowLocation:  payload.allowLocation  ?? undefined,
@@ -49,7 +49,7 @@ export async function PUT(req: Request, { params }: { params: { chatId: string }
       allowVoiceCall: payload.allowVoiceCall ?? undefined,
     },
     create: {
-      chatId: params.chatId,
+      id: params.id,
       userId,
       allowPhoto:     !!payload.allowPhoto,
       allowLocation:  !!payload.allowLocation,
