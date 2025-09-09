@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -30,7 +30,7 @@ export default function OnboardingPage() {
         // tetap lanjut, tapi kasih info kecil
         console.warn("Onboarding partial:", data);
       }
-      router.push("/mood");
+      router.push("/chat");
     } catch (e: any) {
       setErr(e?.message ?? "Gagal menyimpan");
     } finally {
@@ -45,7 +45,7 @@ export default function OnboardingPage() {
           <div className="h-10 w-10 rounded-full bg-[#FFCD00]" />
           <div>
             <h1 className="text-lg font-extrabold text-white">Lengkapi Profil</h1>
-            <p className="text-sm text-white/60">Biar match-mu lebih akurat ✨</p>
+            <p className="text-sm text-white/60">Biar match-mu lebih akurat ?</p>
           </div>
         </div>
 
@@ -111,3 +111,4 @@ export default function OnboardingPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-﻿
+
 import { Nunito } from "next/font/google";
 import Link from "next/link";
 const nunito = Nunito({ subsets: ["latin"], weight: ["400","600","700"] });
@@ -9,7 +9,7 @@ export default function BumbleShell({ children }: { children: React.ReactNode })
         <div className="mx-auto max-w-md px-4 py-3 flex items-center justify-between">
           <Link href="/feed" className="font-extrabold tracking-wide">moodmatch</Link>
           <nav className="text-sm flex gap-3">
-            <Link href="/mood" className="hover:underline">Mood</Link>
+            <Link href="/chat" className="hover:underline">Mood</Link>
             <Link href="/match" className="hover:underline">Matches</Link>
           </nav>
         </div>
@@ -18,6 +18,7 @@ export default function BumbleShell({ children }: { children: React.ReactNode })
     </div>
   );
 }
+
 
 
 

@@ -4,6 +4,6 @@ import store from "@/lib/mock-auth"
 
 export default function Page() {
   const token = cookies().get("session")?.value
-  if (token && (store as any).sessions?.[token]) redirect("/mood")
+  if (token && (store as any).sessions?.[token]) redirect("/chat")
   redirect("/login")
 }

@@ -1,10 +1,10 @@
-﻿"use client"
+"use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Heart, User, Settings } from "lucide-react"
+import { Home, MessageSquare, User, Settings } from "lucide-react"
 const items = [
-  { href: "/mood", icon: Home, label: "Swipe" },
-  { href: "/matches", icon: Heart, label: "Matches" },
+  { href: "/chat", icon: Home, label: "Swipe" },
+  { href: "/matches", icon: MessageSquare, label: "Matches" },
   { href: "/profile", icon: User, label: "Profile" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ]
@@ -26,3 +26,4 @@ export function BottomNav() {
     </nav>
   )
 }
+
