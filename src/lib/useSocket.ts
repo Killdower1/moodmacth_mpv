@@ -1,12 +1,8 @@
-﻿
-"use client";
-import { io } from "socket.io-client";
-import { useEffect, useRef } from "react";
-export function useSocket(roomId: string | number){
-  const ref = useRef<ReturnType<typeof io> | null>(null);
-  useEffect(()=>{ fetch('/api/socket/io'); const s=io({ path:'/api/socket/io' }); ref.current=s; s.emit('join', String(roomId)); return ()=>{ s.disconnect(); };},[roomId]);
-  return ref;
+﻿"use client";
+
+export type SocketRef = { current: any; connected?: boolean };
+
+/** Stub: terima roomId opsional, kembalikan objek mirip useRef */
+export function useSocket(_roomId?: string): SocketRef {
+  return { current: null, connected: false };
 }
-
-
-

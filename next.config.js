@@ -1,5 +1,11 @@
+﻿const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config) => {
+    config.resolve = config.resolve || {};
+    config.resolve.alias = { ...(config.resolve.alias || {}), '@': path.resolve(__dirname, 'src') };
+    return config;
+  },
   reactStrictMode: true,
   experimental: { serverActions: { allowedOrigins: ['*'] } },
   images: {
@@ -12,3 +18,4 @@ const nextConfig = {
   },
 };
 module.exports = nextConfig;
+

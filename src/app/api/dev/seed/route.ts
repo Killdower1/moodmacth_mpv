@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/server/prisma";
 
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
       SELECT column_name FROM information_schema.columns
       WHERE table_schema='public' AND table_name IN ('User','user');
     `;
-    const set = new Set(cols.map(c => c.column_name));
+    const set = new Set(cols.map((c: { column_name: string }) => c.column_name));
 
     const total = await prisma.user.count().catch(() => 0);
     if (!force && total >= 20) {
@@ -60,3 +60,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok:false, error: e?.message ?? "seed_failed" }, { status: 200 });
   }
 }
+

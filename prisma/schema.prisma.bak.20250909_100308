@@ -160,5 +160,12 @@ model Like {
   @@unique([fromId, toId])
 }
 
-
-
+model Match {
+  id           String   @id @default(cuid())
+  aId          String
+  bId          String
+  createdAt    DateTime @default(now())
+  lastActiveAt DateTime? @default(now())
+  a User @relation("matchA", fields: [aId], references: [id], onDelete: Cascade)
+  b User @relation("matchB", fields: [bId], references: [id], onDelete: Cascade)
+}

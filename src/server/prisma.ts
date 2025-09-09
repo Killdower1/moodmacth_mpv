@@ -1,4 +1,5 @@
-﻿import { PrismaClient } from "@prisma/client";
+﻿import { Prisma } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 declare global { var prisma: PrismaClient | undefined; }
 
@@ -30,7 +31,7 @@ function stripBadUserSelect(args: any) {
   }
 }
 
-client.$use(async (params, next) => {
+client.$use(async (params: any, next: any) => {
   try {
     // coerce semua id -> string di where/data
     if (params?.args?.where) normalizeIds(params.args.where);
@@ -47,3 +48,5 @@ client.$use(async (params, next) => {
 export const prisma = client;
 if (process.env.NODE_ENV !== "production") (globalThis as any).prisma = client;
 export default prisma;
+
+
