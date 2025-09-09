@@ -1,41 +1,96 @@
-﻿"use client";
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import Link from "next/link";
-import { UseShell } from "../_auth/shell";
+"use client"
 
-export default function Page() {
-  const [email,setEmail]=useState("");
-  const [otp,setOtp]=useState("");
-  const [loading,setLoading]=useState(false);
-  async function onSubmit(e:React.FormEvent){
-    e.preventDefault(); setLoading(true);
-    const res = await signIn("credentials", { email, otp, redirect: true, callbackUrl: "/" }).catch(()=>null);
-    setLoading(false);
-    if (!res) alert("Login gagal. Cek email/OTP.");
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState("demo@example.com")
+  const [password, setPassword] = useState("demo123")
+  const [sent, setSent] = useState(false)
+  const [otp, setOtp] = useState("")
+  const [devOtp, setDevOtp] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const requestOtp = async () => {
+    setLoading(true); setErr(null)
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.ok) throw new Error(data?.error || "Gagal login")
+      setSent(true)
+      setDevOtp(data.devOtp) // tampilkan OTP dev (local only)
+    } catch (e: any) {
+      setErr(e.message)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const verifyOtp = async () => {
+    setLoading(true); setErr(null)
+    try {
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: otp })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.ok) throw new Error(data?.error || "OTP salah")
+      router.push("/mood")
+    } catch (e: any) {
+      setErr(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <UseShell>
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Masuk</h1>
-        <p className="text-slate-400 text-sm">Gunakan email yang di-whitelist + OTP <code>111111</code></p>
-      </div>
-      <form onSubmit={onSubmit} className="rounded-2xl border border-slate-700/50 bg-slate-800/50 backdrop-blur p-5 shadow-xl space-y-4">
-        <div>
-          <label className="block text-sm mb-1">Email</label>
-          <input className="w-full rounded-xl bg-slate-900/50 border border-slate-700 px-3 py-2 outline-none focus:border-slate-500"
-                 type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="you@example.com"/>
-        </div>
-        <div>
-          <label className="block text-sm mb-1">OTP</label>
-          <input className="w-full rounded-xl bg-slate-900/50 border border-slate-700 px-3 py-2 outline-none focus:border-slate-500 tracking-[0.3em]"
-                 type="text" inputMode="numeric" value={otp} onChange={e=>setOtp(e.target.value)} required placeholder="••••••"/>
-        </div>
-        <button disabled={loading} className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3 py-2 font-medium shadow-lg disabled:opacity-60">
-          {loading ? "Signing in..." : "Masuk"}
-        </button>
-        <p className="text-center text-sm text-slate-400">Belum punya akun? <Link className="underline underline-offset-4" href="/register">Daftar</Link></p>
-      </form>
-    </UseShell>
-  );
+    <div className="flex min-h-[80dvh] items-center justify-center">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>{sent ? "Masukkan OTP" : "Masuk dengan Email"}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!sent ? (
+            <>
+              <Input placeholder="email" value={email} onChange={e => setEmail(e.target.value)} />
+              <Input placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+              {err && <p className="text-sm text-red-500">{err}</p>}
+              <Button className="w-full" onClick={requestOtp} disabled={loading}>
+                {loading ? "Memproses..." : "Kirim Kode OTP"}
+              </Button>
+              <p className="text-xs text-muted-foreground">Demo user: demo@example.com / demo123</p>
+            </>
+          ) : (
+            <>
+              <Input placeholder="6 digit OTP" value={otp} maxLength={6} onChange={e => setOtp(e.target.value.replace(/\D/g, ""))} />
+              {devOtp && (
+                <div className="inline-flex items-center gap-2 rounded-lg bg-muted px-2 py-1 text-xs">
+                  <span className="opacity-70">DEV OTP:</span><b>{devOtp}</b>
+                </div>
+              )}
+              {err && <p className="text-sm text-red-500">{err}</p>}
+              <div className="flex gap-2">
+                <Button className="w-full" onClick={verifyOtp} disabled={loading || otp.length < 6}>
+                  {loading ? "Memverifikasi..." : "Verifikasi"}
+                </Button>
+                <Button variant="outline" onClick={() => { setSent(false); setOtp(""); setDevOtp(null) }}>
+                  Ubah Email
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
 }

@@ -1,11 +1,5 @@
-﻿import type { Metadata } from "next"
-import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-export const metadata: Metadata = { title: "Moodmacth", description: "Swipe with mood" }
+﻿export const metadata = { title: "App" };
+import "./globals.css";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body><ThemeProvider>{children}</ThemeProvider></body>
-    </html>
-  )
+  return <html lang="en"><body>{children}</body></html>;
 }

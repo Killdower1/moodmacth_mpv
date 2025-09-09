@@ -1,11 +1,9 @@
-﻿"use client";
-import React from "react";
-
-export function AppShell({ children }: { children?: React.ReactNode }) {
+import { BottomNav } from "@/components/bottom-nav"
+export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100">
-      <main className="max-w-md mx-auto p-6">{children}</main>
+    <div className="min-h-dvh bg-background text-foreground">
+      <div className="container mx-auto max-w-md pb-20 pt-4">{children}</div>
+      <BottomNav />
     </div>
-  );
+  )
 }
-export default AppShell;

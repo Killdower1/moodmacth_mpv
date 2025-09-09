@@ -1,5 +1,7 @@
 ﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* smoothing */
-:root { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+/* opsional: reset kecil supaya font & spacing gak aneh */
+:root { --bg: #fff; --fg: #111; }
+html,body,#root { height: 100%; }
