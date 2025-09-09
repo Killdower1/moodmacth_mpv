@@ -4,7 +4,7 @@ import Link from "next/link";
 
 type ChatItem = {
   id: string;
-  match: { id: string; userAId: string; userBId: string; updatedAt: string };
+  match: { id: string; userAId: string; userBId: string };
   messages: { id: string; text: string | null; type: string; createdAt: string }[];
 };
 
@@ -14,27 +14,24 @@ export default function ChatPage() {
 
   useEffect(() => {
     let mounted = true;
+
     const load = async () => {
-  try {
-    const res = await fetch("/api/chats", { cache: "no-store" });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.warn("GET /api/chats failed", res.status, text);
-      setData([]); setLoading(false);
-      return;
-    }
-    const json = await res.json();
-    setData(json.chats ?? []);
-    setLoading(false);
-  } catch (e) {
-    console.error("GET /api/chats error", e);
-    setData([]); setLoading(false);
-  }
-};
-      const res = await fetch("/api/chats", { cache: "no-store" });
-      const json = await res.json();
-      if (mounted) { setData(json.chats ?? []); setLoading(false); }
+      try {
+        const res = await fetch("/api/chats", { cache: "no-store" });
+        if (!res.ok) {
+          // kemungkinan 401 kalau belum login
+          console.warn("GET /api/chats failed", res.status, await res.text().catch(() => ""));
+          if (mounted) { setData([]); setLoading(false); }
+          return;
+        }
+        const json = await res.json();
+        if (mounted) { setData(json.chats ?? []); setLoading(false); }
+      } catch (e) {
+        console.error("GET /api/chats error", e);
+        if (mounted) { setData([]); setLoading(false); }
+      }
     };
+
     load();
     const t = setInterval(load, 4000);
     return () => { mounted = false; clearInterval(t); };
@@ -49,7 +46,7 @@ export default function ChatPage() {
       ) : (
         <ul className="space-y-2">
           {data.map((c) => {
-            const last = c.messages[0];
+            const last = c.messages?.[0];
             return (
               <li key={c.id}>
                 <Link href={`/chat/${c.id}`} className="block rounded-xl border p-3 hover:bg-gray-50">
