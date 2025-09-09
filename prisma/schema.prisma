@@ -1,4 +1,4 @@
-﻿generator client {
+generator client {
   provider = "prisma-client-js"
 }
 
@@ -160,13 +160,37 @@ model Like {
   @@unique([fromId, toId])
 }
 
-model Match {
-  id           String   @id @default(cuid())
-  aId          String
-  bId          String
-  createdAt    DateTime @default(now())
-  lastActiveAt DateTime? @default(now())
-  a User @relation("matchA", fields: [aId], references: [id], onDelete: Cascade)
-  b User @relation("matchB", fields: [bId], references: [id], onDelete: Cascade)
+// >>> CHAT_V1_START
+model Chat {
+  id        String    @id @default(cuid())
+  matchId   String    @unique
+  match     Match     @relation(fields: [matchId], references: [id])
+  messages  Message[]
+  consents  Consent[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
+model Consent {
+  id             String   @id @default(cuid())
+  chatId         String
+  userId         String
+  allowPhoto     Boolean  @default(false)
+  allowLocation  Boolean  @default(false)
+  allowVideoCall Boolean  @default(false)
+  allowVoiceCall Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([chatId, userId])
+}
+enum MessageType {
+  TEXT
+  IMAGE
+  LOCATION
+  SYSTEM
+  CALL
+}
+// <<< CHAT_V1_END
