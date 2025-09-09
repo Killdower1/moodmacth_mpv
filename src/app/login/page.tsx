@@ -1,96 +1,37 @@
-"use client"
-
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+﻿"use client";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("demo@example.com")
-  const [password, setPassword] = useState("demo123")
-  const [sent, setSent] = useState(false)
-  const [otp, setOtp] = useState("")
-  const [devOtp, setDevOtp] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const params = useSearchParams();
+  const error = params.get("error");
 
-  const requestOtp = async () => {
-    setLoading(true); setErr(null)
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      })
-      const data = await res.json()
-      if (!res.ok || !data.ok) throw new Error(data?.error || "Gagal login")
-      setSent(true)
-      setDevOtp(data.devOtp) // tampilkan OTP dev (local only)
-    } catch (e: any) {
-      setErr(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const verifyOtp = async () => {
-    setLoading(true); setErr(null)
-    try {
-      const res = await fetch("/api/auth/otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code: otp })
-      })
-      const data = await res.json()
-      if (!res.ok || !data.ok) throw new Error(data?.error || "OTP salah")
-      router.push("/mood")
-    } catch (e: any) {
-      setErr(e.message)
-    } finally {
-      setLoading(false)
-    }
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const res = await signIn("credentials", { email, otp, redirect: false });
+    setLoading(false);
+    if (res?.ok) router.replace("/");
   }
 
   return (
-    <div className="flex min-h-[80dvh] items-center justify-center">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>{sent ? "Masukkan OTP" : "Masuk dengan Email"}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!sent ? (
-            <>
-              <Input placeholder="email" value={email} onChange={e => setEmail(e.target.value)} />
-              <Input placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-              {err && <p className="text-sm text-red-500">{err}</p>}
-              <Button className="w-full" onClick={requestOtp} disabled={loading}>
-                {loading ? "Memproses..." : "Kirim Kode OTP"}
-              </Button>
-              <p className="text-xs text-muted-foreground">Demo user: demo@example.com / demo123</p>
-            </>
-          ) : (
-            <>
-              <Input placeholder="6 digit OTP" value={otp} maxLength={6} onChange={e => setOtp(e.target.value.replace(/\D/g, ""))} />
-              {devOtp && (
-                <div className="inline-flex items-center gap-2 rounded-lg bg-muted px-2 py-1 text-xs">
-                  <span className="opacity-70">DEV OTP:</span><b>{devOtp}</b>
-                </div>
-              )}
-              {err && <p className="text-sm text-red-500">{err}</p>}
-              <div className="flex gap-2">
-                <Button className="w-full" onClick={verifyOtp} disabled={loading || otp.length < 6}>
-                  {loading ? "Memverifikasi..." : "Verifikasi"}
-                </Button>
-                <Button variant="outline" onClick={() => { setSent(false); setOtp(""); setDevOtp(null) }}>
-                  Ubah Email
-                </Button>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
+    <main className="max-w-sm mx-auto p-6">
+      <h1 className="text-xl font-semibold mb-4">Login (Dev OTP)</h1>
+      <form onSubmit={onSubmit} className="space-y-3">
+        <input className="w-full border rounded p-2" placeholder="email" type="email"
+               value={email} onChange={e=>setEmail(e.target.value)} />
+        <input className="w-full border rounded p-2" placeholder="OTP (111111)" type="text"
+               value={otp} onChange={e=>setOtp(e.target.value)} />
+        {error && <p className="text-red-600 text-sm">Login gagal: {error}</p>}
+        <button disabled={loading} className="w-full rounded p-2 border">
+          {loading ? "Loading..." : "Masuk"}
+        </button>
+      </form>
+    </main>
+  );
 }
