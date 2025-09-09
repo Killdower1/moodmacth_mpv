@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/auth-session";
 
-async function ensureMember(id: string, userId: string) {
+async function ensureMember(chatId: string, userId: string) {
   const c = await prisma.chat.findUnique({
-    where: { id: id },
+    where: { id: chatId },
     select: { match: { select: { userAId: true, userBId: true } } },
   });
   if (!c) throw new Response("CHAT_NOT_FOUND", { status: 404 });
@@ -12,37 +12,33 @@ async function ensureMember(id: string, userId: string) {
   if (userAId !== userId && userBId !== userId) throw new Response("FORBIDDEN", { status: 403 });
 }
 
-export async function GET(_: Request, { params }: { params: { id: string }) {
+export async function GET(_: Request, { params }: { params: { id: string } }) {
   const userId = await getSessionUserId();
   await ensureMember(params.id, userId);
 
   const messages = await prisma.message.findMany({
-    where: { id: params.id },
+    where: { chatId: params.id },
     orderBy: { createdAt: "asc" },
     take: 200,
-    select: { id: true, senderId: true, type: true, text: true, imageUrl: true, locLat: true, locLng: true, createdAt: true },
+    // Hanya field yang ada di schema sekarang
+    select: { id: true, senderId: true, text: true, createdAt: true },
   });
   return NextResponse.json({ messages, me: userId });
 }
 
-export async function POST(req: Request, { params }: { params: { id: string }) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   const userId = await getSessionUserId();
   await ensureMember(params.id, userId);
 
-  const body = await req.json() as { type?: "TEXT"|"IMAGE"|"LOCATION"|"SYSTEM"|"CALL"; text?: string };
-  const type = body.type ?? "TEXT";
-  const text = body.text;
-
-  if (type === "TEXT" && (!text || !text.trim())) {
-    return NextResponse.json({ error: "EMPTY_TEXT" }, { status: 400 });
-  }
+  const body = await req.json() as { text?: string };
+  const text = (body.text ?? "").trim();
+  if (!text) return NextResponse.json({ error: "EMPTY_TEXT" }, { status: 400 });
 
   const msg = await prisma.message.create({
     data: {
-      id: params.id,
+      chatId: params.id,
       senderId: userId,
-      type,
-      text: type === "TEXT" ? text!.trim() : null,
+      text,
     },
   });
 
