@@ -1,4 +1,4 @@
-generator client {
+﻿generator client {
   provider = "prisma-client-js"
 }
 
@@ -149,3 +149,24 @@ model MoodSession {
 
   createdAt DateTime @default(now())
 }
+
+model Like {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  createdAt DateTime @default(now())
+  from User @relation("likesGiven", fields: [fromId], references: [id], onDelete: Cascade)
+  to   User @relation("likesRecv",  fields: [toId],   references: [id], onDelete: Cascade)
+  @@unique([fromId, toId])
+}
+
+model Match {
+  id           String   @id @default(cuid())
+  aId          String
+  bId          String
+  createdAt    DateTime @default(now())
+  lastActiveAt DateTime? @default(now())
+  a User @relation("matchA", fields: [aId], references: [id], onDelete: Cascade)
+  b User @relation("matchB", fields: [bId], references: [id], onDelete: Cascade)
+}
+
