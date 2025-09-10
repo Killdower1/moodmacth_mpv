@@ -1,75 +1,40 @@
-import type { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+﻿import type { NextAuthOptions } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/server/prisma";
-import bcrypt from "bcryptjs";
-import { z } from "zod";
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  session: { strategy: "jwt" },
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: "Credentials",
       credentials: {
-        identifier: { label: "Email or Username", type: "text" },
-        password: { label: "Password", type: "password" }
+        email: { label: "Email", type: "text" },
+        code: { label: "OTP", type: "text" },
       },
       async authorize(credentials) {
-        const schema = z.object({
-          identifier: z.string().min(3),
-          password: z.string().min(6),
+        const email = credentials?.email?.toLowerCase().trim();
+        const code = (credentials?.code || "").trim();
+        if (!email) return null;
+
+        const devCode = process.env.DEV_STATIC_OTP || "000000";
+        if (code && code !== devCode) return null;
+
+        const user = await prisma.user.upsert({
+          where: { email },
+          update: {},
+          create: { email },
         });
-        const parsed = schema.safeParse(credentials);
-        if (!parsed.success) return null;
-
-        const identifier = parsed.data.identifier.trim().toLowerCase();
-        const pwd = parsed.data.password;
-
-        const where = identifier.includes("@")
-          ? { email: identifier }
-          : { username: identifier };
-
-        const user = await prisma.user.findUnique({
-          where,
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            name: true,
-            passwordHash: true,
-          },
-        });
-        if (!user) return null;
-
-        const valid = await bcrypt.compare(pwd, user.passwordHash);
-        if (!valid) return null;
-
-        return {
-          id: String(user.id),
-          email: user.email,
-          username: user.username,
-          name: user.name ?? null,
-        };
+        return { id: user.id, email: user.email, name: user.name || user.email } as any;
       },
     }),
   ],
-  session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = String(user.id);
-        token.email = user.email;
-        token.username = user.username;
-        token.name = user.name ?? "";
-      }
+      if (user) token.id = (user as any).id;
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token?.id) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.username = token.username as string | null;
-        session.user.name = token.name as string | null;
-      }
+      if (session.user) (session.user as any).id = token.id as string;
       return session;
     },
   },

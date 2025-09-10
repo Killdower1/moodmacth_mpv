@@ -1,20 +1,24 @@
 ﻿import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]/options";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { prisma } from "@/server/prisma";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const me = await prisma.user.findUnique({ where: { email: session.user.email }});
-  if (!me) return NextResponse.json({ error: "No user" }, { status: 404 });
+  const s = await getServerSession(authOptions);
+  if (!s?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
+  const me = String(s.user.id);
   const matches = await prisma.match.findMany({
-    where: { OR: [{ aId: me.id }, { bId: me.id }] },
-    orderBy: { lastActiveAt: "desc" },
-    include: { a: true, b: true },
-    take: 50,
+    where: { OR: [{ userAId: me }, { userBId: me }] },
+    include: { userA: true, userB: true },
+    orderBy: { createdAt: "desc" },
+    take: 100,
   });
-  return NextResponse.json({ matches });
+
+  const data = matches.map((m) => {
+    const other = m.userAId === me ? m.userB : m.userA;
+    return { id: m.id, otherId: other.id, otherName: other.name || other.email };
+  });
+
+  return NextResponse.json({ matches: data });
 }
