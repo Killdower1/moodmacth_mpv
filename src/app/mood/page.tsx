@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { AppShell } from "@/components/app-shell"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react"
 import { X, Heart, SlidersHorizontal } from "lucide-react"
 
 type Profile = { id: number; name: string; img: string }
-const profiles: Profile[] = [
+const defaultProfiles: Profile[] = [
   { id: 1, name: "Alya, 24",  img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330" },
   { id: 2, name: "Dimas, 26", img: "https://images.unsplash.com/photo-1502685104226-ee32379fefbe" },
   { id: 3, name: "Risa, 25",  img: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1" },
@@ -26,6 +26,23 @@ export default function MoodPage() {
   }, [])
   const savePrefs = (p: Prefs) => { setPrefs(p); localStorage.setItem("prefs", JSON.stringify(p)); setFilterOpen(false) }
 
+  // Sumber data: start dummy, lalu override dari API (SELALU set, meski kosong)
+  const [profiles, setProfiles] = useState<Profile[]>(defaultProfiles)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/mood", { cache: "no-store" })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!cancelled && Array.isArray(json?.profiles)) {
+          setProfiles(json.profiles as Profile[]) // set bahkan jika []
+        }
+      } catch {}
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   const [index, setIndex] = useState(0)
   const onSwiped = () => setIndex(i => Math.min(i + 1, profiles.length))
   const current = profiles.slice(index, index + 2)
@@ -42,12 +59,11 @@ export default function MoodPage() {
         </button>
       </div>
 
-      {/* Deck center */}
       <div className="w-full flex justify-center mt-6 px-4">
         <div className="relative aspect-[3/4] w-[min(92vw,420px)]">
           {current.length === 0 ? (
             <div className="grid h-full place-items-center text-sm text-muted-foreground">
-              Habis. <button className="ml-1 underline" onClick={() => setIndex(0)}>Reset</button>
+              Belum ada user dari database.
             </div>
           ) : (
             current.map((p, i) => (
