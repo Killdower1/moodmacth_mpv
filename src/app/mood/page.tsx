@@ -2,16 +2,14 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { decodeUserIdFromSession } from '@/lib/session';
+
 export const dynamic = 'force-dynamic';
 
 export default async function MoodPage() {
-  const me = decodeUserIdFromSession();
-  if (!me) {
-    redirect('/login'); // atau '/login' sesuai rute kamu
-  }
+  const me = decodeUserIdFromSession(); // bisa null, tapi tetap render
 
   const users = await prisma.user.findMany({
-    where: { id: { not: me } },
+    where: me ? { id: { not: me } } : {},
     take: 50,
   });
 
@@ -28,7 +26,6 @@ export default async function MoodPage() {
           const avatar = (u as any).avatarUrl && String((u as any).avatarUrl).trim().length > 0
             ? String((u as any).avatarUrl)
             : '/avatar-default.svg';
-
           const displayName = (u as any).name || (u as any).email || 'User';
           return (
             <div key={u.id} className='rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden'>
@@ -57,7 +54,3 @@ export default async function MoodPage() {
     </div>
   );
 }
-
-
-
-
