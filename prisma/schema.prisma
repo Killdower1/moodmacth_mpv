@@ -206,3 +206,53 @@ enum MessageType {
 }
 
 // <<< CHAT_V1_END
+model UserProfile {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  dateOfBirth DateTime?
+  gender      String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProfilePhoto {
+  id        String   @id @default(cuid())
+  email     String
+  url       String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuthLocal {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+model UserProfile {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  dateOfBirth DateTime?
+  gender      String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProfilePhoto {
+  id        String   @id @default(cuid())
+  email     String
+  url       String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuthLocal {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
