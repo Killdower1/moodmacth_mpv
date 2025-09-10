@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { verifySession } from "./src/lib/auth"
 
@@ -20,5 +20,8 @@ export function middleware(req: NextRequest) {
 
 // lindungi semua kecuali /login, /api, dll
 export const config = {
-  matcher: ["/((?!login|api|_next|favicon.ico|manifest.webmanifest|assets).*)"],
+  matcher: [
+  "/((?!login|register|create-account|onboarding|api/auth|api/mood|_next|favicon.ico).*)",
+],
 }
+
