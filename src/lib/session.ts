@@ -4,6 +4,20 @@ import * as jwt from 'jsonwebtoken';
 
 type Token = { sub?: string } | string;
 
+// Decode saja (tanpa verify) — cukup untuk read-only di page
+export function decodeUserIdFromSession(): string | null {
+  const token = cookies().get('session')?.value;
+  if (!token) return null;
+  try {
+    const payload = jwt.decode(token) as any;
+    if (!payload || typeof payload === 'string') return null;
+    return payload.sub ? String(payload.sub) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Versi verify — pakai untuk endpoint sensitif kalau perlu
 export function tryGetCurrentUserId(): string | null {
   const token = cookies().get('session')?.value;
   if (!token) return null;
