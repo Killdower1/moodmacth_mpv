@@ -1,24 +1,21 @@
-﻿import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { verifySession } from "./src/lib/auth"
+﻿import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
-  // allow public paths
-  const publicPaths = ["/login", "/api", "/_next", "/favicon.ico", "/manifest.webmanifest", "/assets"]
-  if (publicPaths.some(p => pathname === p || pathname.startsWith(p))) {
-    return NextResponse.next()
+  const session = req.cookies.get('session')?.value;
+  if (!session) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/login';
+    // simpan tujuan awal (opsional)
+    url.searchParams.set('next', req.nextUrl.pathname);
+    return NextResponse.redirect(url);
   }
-  const token = req.cookies.get("session")?.value
-  if (!verifySession(token)) {
-    const url = req.nextUrl.clone()
-    url.pathname = "/login"
-    return NextResponse.redirect(url)
-  }
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
-// lindungi semua kecuali /login, /api, dll
+// Lindungi semua kecuali halaman login/register & endpoint auth & aset bawaan
 export const config = {
-  matcher: ["/((?!login|api|_next|favicon.ico|manifest.webmanifest|assets).*)"],
-}
+  matcher: [
+    '/((?!login|register|api/auth|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|assets|images|public).*)',
+  ],
+};

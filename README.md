@@ -110,3 +110,7 @@ ext.config.mjs\
 
 ## License
 Private project.
+## Update: Mood uses DB users (fallback avatar)
+- Halaman **/mood** kini menampilkan daftar user dari database (mengabaikan current user).
+- Jika user tidak memiliki \vatarUrl\, otomatis pakai **/public/avatar-default.svg**.
+- Scope perubahan dibatasi via Husky pre-commit (\ALLOW_PATHS\) agar tidak mengubah UI flow lain.
