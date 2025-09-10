@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { AppShell } from "@/components/app-shell"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,6 +17,46 @@ const profiles: Profile[] = [
 type Prefs = { mood: string; min: number; max: number; gender: "any" | "male" | "female" }
 
 export default function MoodPage() {
+  // --- live data dari API (/api/mood) ---
+  type Profile = { id: number; name: string; img: string };
+  const [live, setLive] = useState<Profile[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/mood')
+      .then(r => r.json())
+      .then(j => {
+        if (!cancelled && Array.isArray(j?.profiles)) {
+          const arr = [...(j.profiles as Profile[])]; // copy → re-init swipe
+          setLive(arr);
+          console.log('[mood] live loaded:', arr.length);
+        }
+      })
+      .catch(err => console.warn('[mood] fetch error', err));
+    return () => { cancelled = true; };
+  }, []);
+
+  // alias sumber data deck: kalau live ada → live, kalau tidak → dummy 'profiles'
+  const data: Profile[] = (live && live.length) ? live : (typeof profiles !== 'undefined' ? (profiles as Profile[]) : []);
+
+  // --- live data dari API (/api/mood) ---
+  const [profilesLive, setProfilesLive] = useState<Profile[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/mood')
+      .then(r => r.json())
+      .then(j => {
+        if (!cancelled && Array.isArray(j?.profiles)) {
+          // copy array biar re-init swipe stack mulus
+          setProfilesLive([...(j.profiles as Profile[])]);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  // sumber list untuk deck: live kalau ada, else dummy 'profiles'
+  const list: Profile[] = profilesLive.length ? profilesLive : profiles;
+
   const [prefs, setPrefs] = useState<Prefs | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
 
@@ -27,8 +67,8 @@ export default function MoodPage() {
   const savePrefs = (p: Prefs) => { setPrefs(p); localStorage.setItem("prefs", JSON.stringify(p)); setFilterOpen(false) }
 
   const [index, setIndex] = useState(0)
-  const onSwiped = () => setIndex(i => Math.min(i + 1, profiles.length))
-  const current = profiles.slice(index, index + 2)
+  const onSwiped = () => setIndex(i => Math.min(i + 1, list.length))
+  const current = list.slice(index, index + 2)
 
   const topApi = useRef<null | ((dir: 1 | -1) => void)>(null)
   const like = () => topApi.current?.(1)
@@ -194,7 +234,7 @@ function FilterModal({
           </div>
         </div>
         <div className="mb-4">
-          <div className="mb-2 text-sm text-muted-foreground">Rentang Umur: {min} – {max}</div>
+          <div className="mb-2 text-sm text-muted-foreground">Rentang Umur: {min} â€“ {max}</div>
           <div className="flex items-center gap-3">
             <input type="range" min={18} max={60} value={min} onChange={(e) => setMin(parseInt(e.target.value))} className="w-full" />
             <input type="range" min={18} max={60} value={max} onChange={(e) => setMax(parseInt(e.target.value))} className="w-full" />
@@ -216,3 +256,6 @@ function FilterModal({
     </div>
   )
 }
+
+
+
