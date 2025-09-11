@@ -1,4 +1,4 @@
-generator client {
+﻿generator client {
   provider = "prisma-client-js"
 }
 
@@ -32,8 +32,7 @@ model User {
   email        String? @unique
   // username untuk login awal
   username     String  @unique
-  passwordHash String
-  phone        String? @unique
+  passwordHash   String`r`n  phone          String?
 
   // profil dasar (onboarding 1)
   name        String
@@ -71,7 +70,6 @@ model User {
   likesRecv      Like[]         @relation("likesRecv")
   consents       Consent[]
   UserInterest   UserInterest[]
-  OtpCode        OtpCode[]
 }
 
 model Photo {
@@ -175,10 +173,11 @@ model Message {
 }
 
 model MoodSession {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  mood      Mood
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  mood   Mood
+
   createdAt DateTime @default(now())
 }
 
@@ -244,7 +243,8 @@ model UserInterest {
   @@unique([userId, interestId])
 }
 
-// Model lamaâ€”biarkan jika masih dipakai, bisa dihapus bila redundant
+// Model lama berikut boleh dibiarkan kalau masih dipakai,
+// tapi disarankan dihapus kalau redundant agar tidak membingungkan.
 model UserProfile {
   id          String    @id @default(cuid())
   email       String    @unique
@@ -263,16 +263,16 @@ model ProfilePhoto {
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
 }
-
+  
 model OtpCode {
-  id         String    @id @default(cuid())
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
   code       String
   channel    String
   expiresAt  DateTime
   consumedAt DateTime?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime @default(now())
 
   @@index([userId, code])
 }

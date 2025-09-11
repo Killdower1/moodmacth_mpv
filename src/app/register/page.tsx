@@ -1,71 +1,63 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import ThemeToggle from "@/components/ThemeToggle";
+import { User, Mail, Lock, Sparkles } from "lucide-react";
 
-export default function RegisterPage() {
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+export default function RegisterPage(){
+  const r = useRouter();
+  const [username, setU] = useState("");
+  const [email, setE] = useState("");
+  const [password, setP] = useState("");
+  const [loading, setL] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent){
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password })});
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data?.error || "Register failed");
-      setLoading(false);
-      return;
+    setL(true);
+    try{
+      const res = await fetch("/api/auth/register", {
+        method:"POST",
+        headers:{ "content-type":"application/json" },
+        body: JSON.stringify({ username, email: email || null, password })
+      });
+      const j = await res.json().catch(()=>null);
+      setL(false);
+      if (res.ok && j?.next) r.push(j.next);
+      else alert(j?.error || "Register gagal");
+    }catch(err:any){
+      setL(false); alert(err?.message || "Network error");
     }
-    await signIn("credentials", {
-      identifier: email,
-      password,
-      redirect: true,
-      callbackUrl: "/onboarding"});
-    setLoading(false);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold text-center">Create account</h1>
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        <input
-          name="name"
-          className="w-full border rounded-lg p-3"
-          placeholder="Your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          name="email"
-          className="w-full border rounded-lg p-3"
-          placeholder="email@example.com"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          name="password"
-          className="w-full border rounded-lg p-3"
-          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button disabled={loading} className="w-full rounded-lg p-3 bg-black text-white disabled:opacity-50">
-          {loading ? "Creating..." : "Sign up"}
-        </button>
-      </form>
-    </div>
+    <>
+      <ThemeToggle />
+      <div className="mobile-shell">
+        <div className="mobile-card">
+          <h1 className="h1" style={{display:"flex",alignItems:"center",gap:8}}>
+            <Sparkles size={20}/> Daftar
+          </h1>
+          <p className="sub">Bikin username & password dulu. Email opsional.</p>
+          <form className="stack" onSubmit={submit}>
+            <div className="input">
+              <User size={18} />
+              <input placeholder="Username" value={username} onChange={e=>setU(e.target.value)} />
+            </div>
+            <div className="input">
+              <Mail size={18} />
+              <input placeholder="Email (opsional)" value={email} onChange={e=>setE(e.target.value)} />
+            </div>
+            <div className="input">
+              <Lock size={18} />
+              <input type="password" placeholder="Password" value={password} onChange={e=>setP(e.target.value)} />
+            </div>
+            <button className="btn primary" disabled={loading || !username || !password}>
+              {loading ? "Mendaftar..." : "Daftar & Lanjut"}
+            </button>
+            <button type="button" className="btn" onClick={()=>r.push("/login")}>Sudah punya akun? Masuk</button>
+          </form>
+        </div>
+      </div>
+    </>
   );
 }
-
-
-

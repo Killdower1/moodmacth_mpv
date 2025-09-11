@@ -45,3 +45,7 @@ logs/
 *.db
 *.db-shm
 *.db-wal
+
+# uploads user
+public/uploads/
+

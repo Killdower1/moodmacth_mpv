@@ -1,26 +1,60 @@
-﻿"use client";
-import { FormEvent, useState } from "react";
-import { signIn } from "next-auth/react";
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import ThemeToggle from "@/components/ThemeToggle";
+import { Mail, Lock, LogIn } from "lucide-react";
 
-export default function LoginPage() {
+export default function LoginPage(){
+  const r = useRouter();
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [password, setPwd] = useState("");
+  const [loading, setL] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
+  async function submit(e: React.FormEvent){
     e.preventDefault();
-    setLoading(true);
-    const res = await signIn("credentials", { email, code, redirect: false });
-    setLoading(false);
-    if (res?.ok) window.location.href = "/onboarding";
-    else alert("Login failed");
+    setL(true);
+    try{
+      const res = await fetch("/api/auth/login", {
+        method:"POST",
+        headers:{ "content-type":"application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const j = await res.json().catch(()=>null);
+      setL(false);
+      if (res.ok && j?.next) r.push(j.next);
+      else alert(j?.error || "Login gagal");
+    }catch(err:any){
+      setL(false); alert(err?.message || "Network error");
+    }
   }
 
   return (
-    <form onSubmit={onSubmit} className="max-w-sm mx-auto p-6 space-y-3">
-      <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="email" className="border px-3 py-2 w-full" />
-      <input value={code} onChange={e=>setCode(e.target.value)} placeholder="OTP (dev: 000000)" className="border px-3 py-2 w-full" />
-      <button disabled={loading} className="px-4 py-2 border rounded">{loading? "Loading...":"Login"}</button>
-    </form>
+    <>
+      <ThemeToggle />
+      <div className="mobile-shell">
+        <div className="mobile-card">
+          <h1 className="h1" style={{marginBottom:6}}>Masuk</h1>
+          <p className="sub" style={{marginBottom:14}}>Email/username & password → OTP → Home</p>
+          <form className="stack" onSubmit={submit}>
+            <div className="input">
+              <Mail size={18} />
+              <input placeholder="Email atau Username" value={email} onChange={e=>setEmail(e.target.value)} />
+            </div>
+            <div className="input">
+              <Lock size={18} />
+              <input type="password" placeholder="Password" value={password} onChange={e=>setPwd(e.target.value)} />
+            </div>
+            <button className="btn primary" disabled={loading || !email || !password}>
+              {loading ? "Memproses..." : (<span style={{display:"inline-flex",alignItems:"center",gap:8}}>
+                <LogIn size={18}/> Masuk
+              </span>)}
+            </button>
+            <button type="button" className="btn" onClick={()=>r.push("/register")}>
+              Belum punya akun? Daftar
+            </button>
+          </form>
+        </div>
+      </div>
+    </>
   );
 }
